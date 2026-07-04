@@ -4,10 +4,6 @@ import '../../auth/presentation/auth_notifier.dart';
 import '../../table/presentation/table_management_screen.dart';
 import '../../kitchen/presentation/kitchen_display_screen.dart';
 import '../../billing/presentation/billing_terminal_screen.dart';
-import '../../shift/presentation/shift_management_screen.dart';
-import '../../auth/presentation/staff_management_screen.dart';
-import '../../settings/presentation/restaurant_settings_screen.dart';
-import '../../reports/presentation/sales_reports_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -19,6 +15,8 @@ class DashboardScreen extends ConsumerWidget {
     final staffName = user?.name ?? 'Staff Name';
     final staffRole = user?.role ?? 'Staff Role';
     final restName = user?.restaurantName ?? 'Kathmandu Cafe & Diner';
+    final isTablet = MediaQuery.of(context).size.width > 600;
+    final crossAxisCount = isTablet ? 4 : 2;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
