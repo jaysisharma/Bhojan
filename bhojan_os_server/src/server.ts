@@ -3,12 +3,17 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 import { prisma } from './config/prisma';
 import authRouter from './modules/auth/auth.routes';
 import menuRouter from './modules/menu/menu.routes';
 import tableRouter from './modules/table/table.routes';
 import orderRouter from './modules/order/order.routes';
 import billingRouter from './modules/billing/billing.routes';
+import shiftRouter from './modules/shift/shift.routes';
+import staffRouter from './modules/staff/staff.routes';
+import tenantRouter from './modules/tenant/tenant.routes';
+import reportsRouter from './modules/reports/reports.routes';
 
 dotenv.config();
 
@@ -26,12 +31,29 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    data: null,
+    error: { message: 'Too many requests, please try again later.' },
+  },
+});
+app.use(limiter);
+
 // Registered routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/menu', menuRouter);
 app.use('/api/v1/tables', tableRouter);
 app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/billing', billingRouter);
+app.use('/api/v1/shifts', shiftRouter);
+app.use('/api/v1/staff', staffRouter);
+app.use('/api/v1/tenant', tenantRouter);
+app.use('/api/v1/reports', reportsRouter);
 
 // Logger middleware
 app.use((req, res, next) => {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "862887352380",
+    "project_id": "bhojan-ca890",
+    "storage_bucket": "bhojan-ca890.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:862887352380:android:2d434a631b4fba688d0b39",
+        "android_client_info": {
+          "package_name": "com.bhojanos.bhojan_os_client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA67SvAXlEDHudbj0rRxM6geGF1YH-fuuM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
