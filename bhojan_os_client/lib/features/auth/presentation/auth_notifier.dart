@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../domain/auth_state.dart';
 
 // Base API URL. In Android emulators, 10.0.2.2 connects to host loopback.
@@ -70,6 +71,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
+
+        // Register FCM device token
+        try {
+          final fcmToken = await FirebaseMessaging.instance.getToken();
+          if (fcmToken != null) {
+            await _dio.post(
+              '$_baseUrl/auth/device-token',
+              data: {'token': fcmToken},
+              options: Options(
+                headers: {
+                  'Authorization': 'Bearer $accessToken',
+                  'X-Restaurant-Id': user.restaurantId,
+                },
+              ),
+            );
+          }
+        } catch (_) {}
       } else {
         final errorMsg = response.data['error']?['message'] as String? ?? 'Authentication failed.';
         state = state.copyWith(status: AuthStatus.error, errorMessage: errorMsg);

@@ -9,9 +9,17 @@ import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/pin_lock_screen.dart';
 import 'features/dashboard/presentation/dashboard_screen.dart';
 import 'features/sync/domain/sync_service.dart';
+import 'features/sync/domain/notification_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Initialize Hive for local persistent token/credentials caching
   await Hive.initFlutter();
@@ -33,6 +41,9 @@ class BhojanApp extends ConsumerWidget {
     
     // Instantiate background sync queue listeners
     ref.watch(syncServiceProvider);
+    
+    // Instantiate notifications service listeners
+    ref.watch(notificationServiceProvider).initialize();
 
     return MaterialApp(
       title: 'BhojanOS',

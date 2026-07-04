@@ -1,0 +1,50 @@
+name: BhojanOS CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-lint-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: bhojan_os_server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: bhojan_os_server
+
+      - name: Run prisma schema check
+        run: npx prisma validate
+        working-directory: bhojan_os_server
+
+      - name: Build backend application
+        run: npm run build
+        working-directory: bhojan_os_server
+
+  client-analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Fetch client dependencies
+        run: flutter pub get
+        working-directory: bhojan_os_client
+
+      - name: Analyze Flutter codebase
+        run: flutter analyze
+        working-directory: bhojan_os_client

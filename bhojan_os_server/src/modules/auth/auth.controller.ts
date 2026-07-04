@@ -223,3 +223,49 @@ export const verifyPin = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Handle registration of FCM device tokens for push notifications.
+ */
+export const updateDeviceToken = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        data: null,
+        error: { message: 'Unauthorized session.' },
+      });
+    }
+
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        error: { message: 'Device token parameter is required.' },
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { fcmToken: token },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { message: 'FCM device token registered successfully.' },
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      data: null,
+      error: {
+        message: 'Failed to register device token.',
+        details: error.message,
+      },
+    });
+  }
+};
+

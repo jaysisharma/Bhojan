@@ -50,6 +50,7 @@ model Tenant {
   orders      Order[]
   bills       Bill[]
   auditLogs   AuditLog[]
+  shifts      Shift[]
 
   @@map("tenants")
 }
@@ -64,11 +65,14 @@ model User {
   pinHash      String     // 4-digit PIN for waiter/cashier screen resume
   role         Role
   isActive     Boolean    @default(true)
+  fcmToken     String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   orders       Order[]    @relation("WaiterOrders")
   bills        Bill[]     @relation("CashierBills")
   auditLogs    AuditLog[]
+  openedShifts Shift[]    @relation("OpenedShifts")
+  closedShifts Shift[]    @relation("ClosedShifts")
 
   @@index([restaurantId])
   @@map("users")
@@ -224,4 +228,27 @@ model AuditLog {
   @@index([restaurantId])
   @@index([userId])
   @@map("audit_logs")
+}
+
+model Shift {
+  id           String    @id @default(uuid())
+  restaurantId String
+  tenant       Tenant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  openedById   String
+  openedBy     User      @relation("OpenedShifts", fields: [openedById], references: [id])
+  closedById   String?
+  closedBy     User?     @relation("ClosedShifts", fields: [closedById], references: [id])
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+  openingCash  Decimal   @db.Decimal(10, 2)
+  closingCash  Decimal?  @db.Decimal(10, 2)
+  expectedCash Decimal?  @db.Decimal(10, 2)
+  actualCash   Decimal?  @db.Decimal(10, 2)
+  cashDiff     Decimal?  @db.Decimal(10, 2)
+  status       String    @default("OPEN") // OPEN, CLOSED
+
+  @@index([restaurantId])
+  @@index([openedById])
+  @@index([closedById])
+  @@map("shifts")
 }

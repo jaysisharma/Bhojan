@@ -1,0 +1,52 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# Compiled build outputs
+dist/
+build/
+bin/
+obj/
+out/
+
+# Terraform cache and state files
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+.terraform.lock.hcl
+
+# Local configuration files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Operating System specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE specific configurations
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Flutter specific ignore patterns
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/bhojan_os_client/build/

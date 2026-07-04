@@ -4,6 +4,7 @@ import '../../order/presentation/order_notifier.dart';
 import '../../table/presentation/table_notifier.dart';
 import '../../table/domain/table_model.dart';
 import '../../order/domain/order_model.dart';
+import '../domain/printer_service.dart';
 
 class BillingTerminalScreen extends ConsumerStatefulWidget {
   const BillingTerminalScreen({super.key});
@@ -505,49 +506,27 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
     double vat,
     double grand,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Thermal Print Output (80mm)'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                color: const Color(0xFFF1F5F9),
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  '=== KATHMANDU CAFE & DINER ===\n'
-                  'PAN: 601234567 • Durbarmarg\n'
-                  '------------------------------\n'
-                  'Table: ${table.tableNumber} • Order: #${order.id.substring(order.id.length - 4)}\n'
-                  'Date: ${DateTime.now().toString().substring(0, 16)}\n'
-                  '------------------------------\n'
-                  '${order.items.map((i) => '${i.quantity} x ${i.menuItem.name.padRight(16)} NPR ${(i.itemTotal).toStringAsFixed(0).padLeft(6)}').join('\n')}\n'
-                  '------------------------------\n'
-                  'Subtotal:             NPR ${sub.toStringAsFixed(0)}\n'
-                  'Discount:            -NPR ${disc.toStringAsFixed(0)}\n'
-                  'SC (10%):             NPR ${sc.toStringAsFixed(0)}\n'
-                  'VAT (13%):            NPR ${vat.toStringAsFixed(0)}\n'
-                  '------------------------------\n'
-                  'GRAND TOTAL:          NPR ${grand.toStringAsFixed(0)}\n'
-                  '------------------------------\n'
-                  'Payment Method:       $_selectedPaymentMethod\n'
-                  '==== Thank You (धन्यवाद) ====\n',
-                  style: const TextStyle(fontFamily: 'Courier', fontSize: 11),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+    final receiptItems = order.items
+        .map((i) => ReceiptItem(
+              name: i.menuItem.name,
+              quantity: i.quantity,
+              totalPrice: i.itemTotal,
+            ))
+        .toList();
+
+    PrinterService().showPrintPreviewDialog(
+      context,
+      brandName: "KATHMANDU CAFE & DINER",
+      address: "Durbarmarg, Kathmandu",
+      phone: "01-4412345",
+      panNumber: "601234567",
+      items: receiptItems,
+      subTotal: sub - disc, // net subtotal
+      serviceCharge: sc,
+      vat: vat,
+      grandTotal: grand,
+      paymentMethod: _selectedPaymentMethod,
+      cashierName: "Cashier Terminal",
     );
   }
 }

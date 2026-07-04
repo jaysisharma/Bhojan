@@ -4,6 +4,10 @@ import '../../auth/presentation/auth_notifier.dart';
 import '../../table/presentation/table_management_screen.dart';
 import '../../kitchen/presentation/kitchen_display_screen.dart';
 import '../../billing/presentation/billing_terminal_screen.dart';
+import '../../shift/presentation/shift_management_screen.dart';
+import '../../auth/presentation/staff_management_screen.dart';
+import '../../settings/presentation/restaurant_settings_screen.dart';
+import '../../reports/presentation/sales_reports_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -15,6 +19,100 @@ class DashboardScreen extends ConsumerWidget {
     final staffName = user?.name ?? 'Staff Name';
     final staffRole = user?.role ?? 'Staff Role';
     final restName = user?.restaurantName ?? 'Kathmandu Cafe & Diner';
+
+    final isAllowedAdmin = staffRole == 'OWNER' || staffRole == 'MANAGER';
+    final isAllowedBilling = staffRole == 'OWNER' || staffRole == 'MANAGER' || staffRole == 'CASHIER';
+
+    final List<Widget> moduleCards = [
+      _buildModuleCard(
+        icon: Icons.table_restaurant_outlined,
+        title: 'Table Management',
+        desc: 'Take orders, check floor status maps.',
+        color: const Color(0xFF003893),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const TableManagementScreen()),
+          );
+        },
+      ),
+      _buildModuleCard(
+        icon: Icons.kitchen_outlined,
+        title: 'Kitchen Display',
+        desc: 'Track KOT cards and preparation queues.',
+        color: const Color(0xFF2E7D32),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const KitchenDisplayScreen()),
+          );
+        },
+      ),
+      if (isAllowedBilling) ...[
+        _buildModuleCard(
+          icon: Icons.receipt_long_outlined,
+          title: 'Billing & Invoices',
+          desc: 'Print receipts, check Fonepay/Cash splits.',
+          color: const Color(0xFFE65100),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BillingTerminalScreen()),
+            );
+          },
+        ),
+        _buildModuleCard(
+          icon: Icons.wallet_outlined,
+          title: 'Shift & Cash Drawer',
+          desc: 'Manage drawer opening/closing audits.',
+          color: const Color(0xFF8E24AA),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ShiftManagementScreen()),
+            );
+          },
+        ),
+      ],
+      if (isAllowedAdmin) ...[
+        _buildModuleCard(
+          icon: Icons.people_outline,
+          title: 'Staff Management',
+          desc: 'Manage roles, active credentials & PINs.',
+          color: const Color(0xFF00ACC1),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const StaffManagementScreen()),
+            );
+          },
+        ),
+        _buildModuleCard(
+          icon: Icons.settings_outlined,
+          title: 'Restaurant Settings',
+          desc: 'Configure taxes, profiles & printers.',
+          color: const Color(0xFFD81B60),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const RestaurantSettingsScreen()),
+            );
+          },
+        ),
+        _buildModuleCard(
+          icon: Icons.analytics_outlined,
+          title: 'Sales & Reports',
+          desc: 'Review sales ledger and statistics charts.',
+          color: const Color(0xFF5E35B1),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SalesReportsScreen()),
+            );
+          },
+        ),
+      ],
+    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -42,13 +140,11 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         actions: [
-          // Lock Shift/Screen Button
           IconButton(
             onPressed: () => ref.read(authProvider.notifier).lockSession(),
             icon: const Icon(Icons.lock_outline, color: Color(0xFF64748B)),
             tooltip: 'Lock Terminal Screen',
           ),
-          // Logout Button
           IconButton(
             onPressed: () => ref.read(authProvider.notifier).logout(),
             icon: const Icon(Icons.logout_outlined, color: Color(0xFFC8102E)),
@@ -63,7 +159,6 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Welcome Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -129,8 +224,6 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Operational Modules Section
               const Text(
                 'Operational Modules',
                 style: TextStyle(
@@ -140,8 +233,6 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Module Grid Placeholders
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -149,71 +240,14 @@ class DashboardScreen extends ConsumerWidget {
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 childAspectRatio: 1.3,
-                children: [
-                  _buildModuleCard(
-                    icon: Icons.table_restaurant_outlined,
-                    title: 'Table Management',
-                    desc: 'Take orders, check floor status maps.',
-                    color: const Color(0xFF003893),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const TableManagementScreen()),
-                      );
-                    },
-                  ),
-                  _buildModuleCard(
-                    icon: Icons.kitchen_outlined,
-                    title: 'Kitchen Display',
-                    desc: 'Track KOT cards and preparation queues.',
-                    color: const Color(0xFF2E7D32),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const KitchenDisplayScreen()),
-                      );
-                    },
-                  ),
-                  _buildModuleCard(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'Billing & Invoices',
-                    desc: 'Print receipts, check Fonepay/Cash splits.',
-                    color: const Color(0xFFE65100),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const BillingTerminalScreen()),
-                      );
-                    },
-                  ),
-                  _buildModuleCard(
-                    icon: Icons.analytics_outlined,
-                    title: 'Sales & Reports',
-                    desc: 'Review shift logs and financial summaries.',
-                    color: const Color(0xFF455A64),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Sales & Reports'),
-                          content: const Text('Financial summaries and visual analytics logs are part of Phase 2 development plans.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                children: moduleCards,
               ),
             ],
           ),
         ),
       ),
     );
+
   }
 
   Widget _buildModuleCard({
