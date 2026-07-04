@@ -1,0 +1,227 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  OWNER
+  MANAGER
+  CASHIER
+  WAITER
+  KITCHEN
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  SERVED
+  SETTLED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  FONEPAY
+  CARD
+  CREDIT
+}
+
+model Tenant {
+  id          String       @id @default(uuid())
+  name        String
+  phone       String
+  address     String
+  panNumber   String?      // Mandatory for Nepalese business compliance
+  vatRate     Decimal      @default(13.00) @db.Decimal(5, 2)
+  scRate      Decimal      @default(0.00)  @db.Decimal(5, 2) // Service charge percentage
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       User[]
+  categories  Category[]
+  menuItems   MenuItem[]
+  tables      Table[]
+  orders      Order[]
+  bills       Bill[]
+  auditLogs   AuditLog[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  restaurantId String
+  tenant       Tenant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String     @unique
+  passwordHash String
+  pinHash      String     // 4-digit PIN for waiter/cashier screen resume
+  role         Role
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  orders       Order[]    @relation("WaiterOrders")
+  bills        Bill[]     @relation("CashierBills")
+  auditLogs    AuditLog[]
+
+  @@index([restaurantId])
+  @@map("users")
+}
+
+model Category {
+  id           String     @id @default(uuid())
+  restaurantId String
+  tenant       Tenant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  sortOrder    Int        @default(0)
+  isDeleted    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  menuItems    MenuItem[]
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId])
+  @@map("categories")
+}
+
+model MenuItem {
+  id           String             @id @default(uuid())
+  restaurantId String
+  tenant       Tenant             @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category           @relation(fields: [categoryId], references: [id])
+  name         String
+  description  String?
+  price        Decimal            @db.Decimal(10, 2)
+  isVeg        Boolean            @default(false)
+  imageUrl     String?
+  isAvailable  Boolean            @default(true)
+  isDeleted    Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  orderItems   OrderItem[]
+  modifiers    MenuItemModifier[]
+
+  @@index([restaurantId])
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+model MenuItemModifier {
+  id           String   @id @default(uuid())
+  menuItemId   String
+  menuItem     MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name         String   // e.g., "Extra Cheese"
+  price        Decimal  @db.Decimal(10, 2)
+  isAvailable  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("menu_item_modifiers")
+}
+
+model Table {
+  id           String   @id @default(uuid())
+  restaurantId String
+  tenant       Tenant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tableNumber  String   // e.g., "1A", "Bar-3"
+  capacity     Int
+  section      String   // e.g., "Main Floor", "Rooftop"
+  status       String   @default("FREE") // FREE, OCCUPIED, BILLING, DIRTY
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+
+  @@unique([restaurantId, tableNumber])
+  @@index([restaurantId])
+  @@map("tables")
+}
+
+model Order {
+  id           String      @id @default(uuid()) // UUID generated client-side for sync tracking
+  restaurantId String
+  tenant       Tenant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tableId      String
+  table        Table       @relation(fields: [tableId], references: [id])
+  waiterId     String
+  waiter       User        @relation("WaiterOrders", fields: [waiterId], references: [id])
+  status       OrderStatus @default(PENDING)
+  notes        String?
+  subtotal     Decimal     @db.Decimal(10, 2)
+  version      Int         @default(1) // For sync concurrency conflict checks
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  orderItems   OrderItem[]
+  bills        Bill[]
+
+  @@index([restaurantId])
+  @@index([tableId])
+  @@index([waiterId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  notes      String?  // Custom customer notes (e.g., "No onions")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Bill {
+  id             String        @id @default(uuid())
+  restaurantId   String
+  tenant         Tenant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderId        String
+  order          Order         @relation(fields: [orderId], references: [id])
+  cashierId      String
+  cashier        User          @relation("CashierBills", fields: [cashierId], references: [id])
+  billNumber     String        // Sequentially generated per-tenant string (e.g., "INV-2026-0001")
+  subtotal       Decimal       @db.Decimal(10, 2)
+  discountAmount Decimal       @default(0.00) @db.Decimal(10, 2)
+  serviceCharge  Decimal       @db.Decimal(10, 2)
+  vatAmount      Decimal       @db.Decimal(10, 2)
+  grandTotal     Decimal       @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod
+  paymentStatus  String        @default("PAID") // PAID, REFUNDED
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([restaurantId, billNumber])
+  @@index([restaurantId])
+  @@index([orderId])
+  @@map("bills")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  restaurantId String
+  tenant       Tenant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  action       String   // e.g., "CANCEL_ORDER", "DELETE_MENU_ITEM", "APPLY_DISCOUNT"
+  entityName   String   // e.g., "Order", "MenuItem"
+  entityId     String
+  oldValues    Json?
+  newValues    Json?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  @@index([restaurantId])
+  @@index([userId])
+  @@map("audit_logs")
+}

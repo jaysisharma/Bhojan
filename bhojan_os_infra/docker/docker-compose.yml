@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  bhojan-db:
+    image: postgres:15-alpine
+    container_name: bhojan-postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: bhojan_user
+      POSTGRES_PASSWORD: bhojan_password
+      POSTGRES_DB: bhojan_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - bhojan_postgres_data:/var/lib/postgresql/data
+
+  bhojan-cache:
+    image: redis:7-alpine
+    container_name: bhojan-redis-cache
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - bhojan_redis_data:/data
+
+volumes:
+  bhojan_postgres_data:
+    driver: local
+  bhojan_redis_data:
+    driver: local
