@@ -5,7 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../domain/auth_state.dart';
 
 // Base API URL. In Android emulators, 10.0.2.2 connects to host loopback.
-const String _baseUrl = 'http://10.0.2.2:3000/api/v1';
+const String _baseUrl = 'http://127.0.0.1:3000/api/v1';
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final Dio _dio = Dio();
@@ -145,7 +145,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         },
       );
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
+      if ((response.statusCode == 200 || response.statusCode == 201) && response.data['success'] == true) {
         state = state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null);
         return true;
       } else {

@@ -30,7 +30,7 @@ class BhojanApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Listen to real-time authentication status changes
     final authState = ref.watch(authProvider);
-    
+
     // Instantiate background sync queue listeners
     ref.watch(syncServiceProvider);
 
