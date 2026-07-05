@@ -40,8 +40,8 @@ class BhojanApp extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     // Instantiate background sync queue listeners
-    ref.read(syncServiceProvider);
-    
+    ref.watch(syncServiceProvider);
+
     // Instantiate notifications service listeners
     ref.watch(notificationServiceProvider).initialize();
 
