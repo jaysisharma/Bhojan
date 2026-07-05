@@ -53,8 +53,71 @@ class TableNotifier extends StateNotifier<List<TableModel>> {
       );
     }
   }
+
+  Future<bool> createTable({
+    required String tableNumber,
+    required int capacity,
+    required String section,
+  }) async {
+    try {
+      final response = await _ref.read(dioProvider).post(
+        '/tables',
+        data: {
+          'tableNumber': tableNumber,
+          'capacity': capacity,
+          'section': section,
+        },
+      );
+      if (response.statusCode == 201 && response.data['success'] == true) {
+        await fetchTables();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> updateTable({
+    required String id,
+    required String tableNumber,
+    required int capacity,
+    required String section,
+  }) async {
+    try {
+      final response = await _ref.read(dioProvider).put(
+        '/tables/$id',
+        data: {
+          'tableNumber': tableNumber,
+          'capacity': capacity,
+          'section': section,
+        },
+      );
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        await fetchTables();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteTable(String id) async {
+    try {
+      final response = await _ref.read(dioProvider).delete('/tables/$id');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        await fetchTables();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }
 
 final tableProvider = StateNotifierProvider<TableNotifier, List<TableModel>>((ref) {
   return TableNotifier(ref);
 });
+

@@ -159,19 +159,26 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Checkout: Table ${table.tableNumber}',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                    ),
-                    Text(
-                      'Order: ${order.id} • Date: ${order.createdAt.hour}:${order.createdAt.minute}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                    ),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Checkout: Table ${table.tableNumber}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Order: ${order.id} • Date: ${order.createdAt.hour}:${order.createdAt.minute}',
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 12),
                 OutlinedButton.icon(
                   onPressed: () => _mockPrintReceipt(table, order, subtotal, discountAmount, serviceCharge, vatAmount, grandTotal),
                   icon: const Icon(Icons.print_outlined, size: 18),
@@ -197,20 +204,27 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${item.quantity} x ${item.menuItem.name}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          if (item.selectedModifiers.isNotEmpty)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              item.selectedModifiers.map((m) => m.name).join(', '),
-                              style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                              '${item.quantity} x ${item.menuItem.name}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        ],
+                            if (item.selectedModifiers.isNotEmpty)
+                              Text(
+                                item.selectedModifiers.map((m) => m.name).join(', '),
+                                style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 12),
                       Text(
                         'NPR ${item.itemTotal.toStringAsFixed(2)}',
                         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
@@ -229,11 +243,17 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Discounts Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 8,
                   children: [
                     const Text('Discount:', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         _buildDiscountButton(0.0),
                         const SizedBox(width: 6),

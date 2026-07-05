@@ -26,7 +26,7 @@ class PrinterService {
     // 3. Double-height text for brand name: ESC ! 16
     bytes.addAll([0x1B, 0x21, 0x10]);
     bytes.addAll(utf8.encode("$brandName\n"));
-    
+
     // Normal text size: ESC ! 0
     bytes.addAll([0x1B, 0x21, 0x00]);
     bytes.addAll(utf8.encode("$address\n"));
@@ -40,7 +40,9 @@ class PrinterService {
     bytes.addAll(utf8.encode("--------------------------------\n"));
 
     for (final item in items) {
-      final nameStr = item.name.length > 18 ? item.name.substring(0, 18) : item.name.padRight(18);
+      final nameStr = item.name.length > 18
+          ? item.name.substring(0, 18)
+          : item.name.padRight(18);
       final qtyStr = item.quantity.toString().padRight(4);
       final priceStr = item.totalPrice.toStringAsFixed(2).padLeft(8);
       bytes.addAll(utf8.encode("$qtyStr $nameStr $priceStr\n"));
@@ -51,9 +53,11 @@ class PrinterService {
     // 5. Right alignment for totals summary: ESC a 2
     bytes.addAll([0x1B, 0x61, 0x02]);
     bytes.addAll(utf8.encode("Subtotal: Rs.${subTotal.toStringAsFixed(2)}\n"));
-    bytes.addAll(utf8.encode("Service Charge (10%): Rs.${serviceCharge.toStringAsFixed(2)}\n"));
+    bytes.addAll(utf8.encode(
+        "Service Charge (10%): Rs.${serviceCharge.toStringAsFixed(2)}\n"));
     bytes.addAll(utf8.encode("VAT (13%): Rs.${vat.toStringAsFixed(2)}\n"));
-    bytes.addAll(utf8.encode("Grand Total: Rs.${grandTotal.toStringAsFixed(2)}\n"));
+    bytes.addAll(
+        utf8.encode("Grand Total: Rs.${grandTotal.toStringAsFixed(2)}\n"));
     bytes.addAll(utf8.encode("--------------------------------\n"));
 
     // 6. Centered footer: ESC a 1
@@ -89,7 +93,8 @@ class PrinterService {
           children: [
             Icon(Icons.print_outlined, color: Color(0xFF003893)),
             SizedBox(width: 8),
-            Text('Thermal Receipt Ticket Preview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Thermal Receipt Ticket Preview',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Container(
@@ -100,28 +105,82 @@ class PrinterService {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(brandName, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'monospace')),
-                Text(address, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-                Text("Tel: $phone", textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-                Text("PAN: $panNumber", textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-                const Text("--------------------------------", textAlign: TextAlign.center, style: TextStyle(fontFamily: 'monospace')),
-                const Text("QTY  ITEM                 PRICE", style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace', fontSize: 12)),
-                const Text("--------------------------------", textAlign: TextAlign.center, style: TextStyle(fontFamily: 'monospace')),
+                Text(brandName,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        fontFamily: 'monospace')),
+                Text(address,
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                Text("Tel: $phone",
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                Text("PAN: $panNumber",
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                const Text("--------------------------------",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: 'monospace')),
+                const Text("QTY  ITEM                 PRICE",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                        fontSize: 12)),
+                const Text("--------------------------------",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: 'monospace')),
                 ...items.map((item) {
-                  final nameStr = item.name.length > 18 ? item.name.substring(0, 18) : item.name.padRight(18);
+                  final nameStr = item.name.length > 18
+                      ? item.name.substring(0, 18)
+                      : item.name.padRight(18);
                   final qtyStr = item.quantity.toString().padRight(4);
-                  final priceStr = item.totalPrice.toStringAsFixed(2).padLeft(8);
-                  return Text("$qtyStr $nameStr $priceStr", style: const TextStyle(fontFamily: 'monospace', fontSize: 12));
+                  final priceStr =
+                      item.totalPrice.toStringAsFixed(2).padLeft(8);
+                  return Text("$qtyStr $nameStr $priceStr",
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 12));
                 }),
-                const Text("--------------------------------", textAlign: TextAlign.center, style: TextStyle(fontFamily: 'monospace')),
-                Text("Subtotal: Rs.${subTotal.toStringAsFixed(2)}", textAlign: TextAlign.right, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-                Text("Service Charge (10%): Rs.${serviceCharge.toStringAsFixed(2)}", textAlign: TextAlign.right, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-                Text("VAT (13%): Rs.${vat.toStringAsFixed(2)}", textAlign: TextAlign.right, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-                Text("Grand Total: Rs.${grandTotal.toStringAsFixed(2)}", textAlign: TextAlign.right, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, fontWeight: FontWeight.bold)),
-                const Text("--------------------------------", textAlign: TextAlign.center, style: TextStyle(fontFamily: 'monospace')),
-                Text("Payment: $paymentMethod", textAlign: TextAlign.center, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-                Text("Cashier: $cashierName", textAlign: TextAlign.center, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-                const Text("Thank you for dining with us!", textAlign: TextAlign.center, style: TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                const Text("--------------------------------",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: 'monospace')),
+                Text("Subtotal: Rs.${subTotal.toStringAsFixed(2)}",
+                    textAlign: TextAlign.right,
+                    style:
+                        const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                Text(
+                    "Service Charge (10%): Rs.${serviceCharge.toStringAsFixed(2)}",
+                    textAlign: TextAlign.right,
+                    style:
+                        const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                Text("VAT (13%): Rs.${vat.toStringAsFixed(2)}",
+                    textAlign: TextAlign.right,
+                    style:
+                        const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                Text("Grand Total: Rs.${grandTotal.toStringAsFixed(2)}",
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+                const Text("--------------------------------",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: 'monospace')),
+                Text("Payment: $paymentMethod",
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                Text("Cashier: $cashierName",
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                const Text("Thank you for dining with us!",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: 'monospace', fontSize: 12)),
               ],
             ),
           ),

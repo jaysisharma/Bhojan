@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -6,7 +7,7 @@ import 'package:dio/dio.dart';
 import '../../../core/network/dio_client.dart';
 import '../data/sync_item.dart';
 
-class SyncService {
+class SyncService extends ChangeNotifier {
   final Ref _ref;
   Box? _syncBox;
   bool _isProcessing = false;
@@ -15,13 +16,19 @@ class SyncService {
     _init();
   }
 
+  int get queueLength => _syncBox?.length ?? 0;
+
   Future<void> _init() async {
     try {
       _syncBox = await Hive.openBox('sync_queue_box');
+      notifyListeners();
 
       // Monitor network connection status changes (connectivity_plus v6.x uses List<ConnectivityResult>)
-      Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
-        final hasConnection = results.any((result) => result != ConnectivityResult.none);
+      Connectivity()
+          .onConnectivityChanged
+          .listen((List<ConnectivityResult> results) {
+        final hasConnection =
+            results.any((result) => result != ConnectivityResult.none);
         if (hasConnection) {
           // ignore: avoid_print
           print('Network connection status restored. Syncing queue...');
@@ -37,7 +44,8 @@ class SyncService {
     }
   }
 
-  Future<void> queueMutation(String endpoint, String method, Map<String, dynamic> payload) async {
+  Future<void> queueMutation(
+      String endpoint, String method, Map<String, dynamic> payload) async {
     if (_syncBox == null) return;
 
     final item = SyncItem(
@@ -49,8 +57,9 @@ class SyncService {
     );
 
     await _syncBox!.put(item.id, jsonEncode(item.toJson()));
+    notifyListeners();
     // ignore: avoid_print
-    print('Offline Mutation Cached: [${method}] ${endpoint}');
+    print('Offline Mutation Cached: [$method] $endpoint');
 
     processQueue();
   }
@@ -68,7 +77,8 @@ class SyncService {
       if (jsonString == null) continue;
 
       try {
-        final syncItem = SyncItem.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
+        final syncItem =
+            SyncItem.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
         Response response;
 
         if (syncItem.method == 'POST') {
@@ -83,10 +93,23 @@ class SyncService {
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           await _syncBox!.delete(key);
+          notifyListeners();
           // ignore: avoid_print
-          print('Successfully reconciled queued request: [${syncItem.method}] ${syncItem.endpoint}');
+          print(
+              'Successfully reconciled queued request: [${syncItem.method}] ${syncItem.endpoint}');
         }
       } catch (e) {
+        if (e is DioException) {
+          final statusCode = e.response?.statusCode;
+          if (statusCode != null && statusCode >= 400 && statusCode < 500) {
+            await _syncBox!.delete(key);
+            notifyListeners();
+            // ignore: avoid_print
+            print(
+                'Poisoned request discarded from queue (Status $statusCode): $e');
+            continue;
+          }
+        }
         // ignore: avoid_print
         print('Queue processing error on key $key: $e. Retries scheduled.');
         break;
@@ -97,6 +120,6 @@ class SyncService {
   }
 }
 
-final syncServiceProvider = Provider<SyncService>((ref) {
+final syncServiceProvider = ChangeNotifierProvider<SyncService>((ref) {
   return SyncService(ref);
 });

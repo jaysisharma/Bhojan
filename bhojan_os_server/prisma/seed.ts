@@ -15,6 +15,7 @@ async function main() {
   await prisma.menuItemModifier.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.shift.deleteMany();
   await prisma.user.deleteMany();
   await prisma.tenant.deleteMany();
 
@@ -38,7 +39,7 @@ async function main() {
   
   const usersData = [
     {
-      name: 'Ram Prasad',
+      name: 'Jimmy',
       phone: '9801111111',
       password: 'ownerpassword',
       pin: '1111',
