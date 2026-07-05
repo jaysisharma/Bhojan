@@ -15,9 +15,18 @@ class MenuItemModifier {
     return MenuItemModifier(
       id: json['id'] as String,
       name: json['name'] as String,
-      price: (json['price'] as num).toDouble(),
+      price: double.parse(json['price'].toString()),
       isAvailable: json['isAvailable'] as bool? ?? true,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+      'isAvailable': isAvailable,
+    };
   }
 }
 
@@ -49,11 +58,24 @@ class MenuItem {
       categoryId: json['categoryId'] as String,
       name: json['name'] as String,
       description: json['description'] as String? ?? '',
-      price: (json['price'] as num).toDouble(),
+      price: double.parse(json['price'].toString()),
       isVeg: json['isVeg'] as bool? ?? false,
       isAvailable: json['isAvailable'] as bool? ?? true,
       modifiers: modList.map((m) => MenuItemModifier.fromJson(m as Map<String, dynamic>)).toList(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'categoryId': categoryId,
+      'name': name,
+      'description': description,
+      'price': price,
+      'isVeg': isVeg,
+      'isAvailable': isAvailable,
+      'modifiers': modifiers.map((m) => m.toJson()).toList(),
+    };
   }
 }
 
@@ -74,5 +96,13 @@ class MenuCategory {
       name: json['name'] as String,
       sortOrder: json['sortOrder'] as int? ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'sortOrder': sortOrder,
+    };
   }
 }

@@ -17,6 +17,7 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
   String? _selectedTableId;
   double _discountPercentage = 0.0;
   String _selectedPaymentMethod = 'CASH';
+  bool _mobileShowCheckout = false;
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +27,16 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
     // Filter tables that have active orders (status OCCUPIED or BILLING)
     final billingTables = tables.where((t) => t.status == 'OCCUPIED' || t.status == 'BILLING').toList();
 
-    // Select the first billing table by default if none selected
-    if (_selectedTableId == null && billingTables.isNotEmpty) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
+    // Reset selected table id if it is no longer in billingTables list (e.g. checked out)
+    if (_selectedTableId != null && !billingTables.any((t) => t.id == _selectedTableId)) {
+      _selectedTableId = null;
+      _mobileShowCheckout = false;
+    }
+
+    // Select the first billing table by default on tablet if none selected
+    if (isTablet && _selectedTableId == null && billingTables.isNotEmpty) {
       _selectedTableId = billingTables.first.id;
     }
 
@@ -37,17 +46,27 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
 
     final activeOrder = selectedTable != null ? orderState.activeOrders[selectedTable.id] : null;
 
-    final isTablet = MediaQuery.of(context).size.width > 600;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
         iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
-        title: const Text(
-          'Cashier Billing Terminal',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
+        leading: (!isTablet && _mobileShowCheckout)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  setState(() {
+                    _mobileShowCheckout = false;
+                  });
+                },
+              )
+            : null,
+        title: Text(
+          (!isTablet && _mobileShowCheckout && selectedTable != null)
+              ? 'Billing: Table ${selectedTable.tableNumber}'
+              : 'Cashier Billing Terminal',
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
         ),
       ),
       body: billingTables.isEmpty
@@ -57,89 +76,192 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
                 children: [
                   Icon(Icons.receipt_outlined, size: 64, color: Color(0xFF94A3B8)),
                   SizedBox(height: 16),
-                  Text('No tables pending billing/checkout.', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    'No tables pending billing/checkout.',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                  ),
                 ],
               ),
             )
-          : Row(
-              children: [
-                // Left pane: Table Selector
-                Expanded(
-                  flex: isTablet ? 1 : 2,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      border: Border(right: BorderSide(color: Color(0xFFE2E8F0))),
+          : (!isTablet && _mobileShowCheckout)
+              ? (activeOrder != null && selectedTable != null
+                  ? _buildCheckoutForm(context, selectedTable, activeOrder)
+                  : const Center(child: Text('Order details not found.')))
+              : Row(
+                  children: [
+                    // Left pane: Table Selector (On Tablet, it's the master pane. On Mobile, it's full screen)
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          border: Border(right: BorderSide(color: Color(0xFFE2E8F0))),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              color: const Color(0xFFF8F9FA),
+                              child: Text(
+                                'Active Tables (${billingTables.length})',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                itemCount: billingTables.length,
+                                itemBuilder: (context, index) {
+                                  final table = billingTables[index];
+                                  final isSelected = table.id == _selectedTableId;
+                                  final tableOrder = orderState.activeOrders[table.id];
+                                  return _buildTableCard(table, tableOrder, isSelected, isTablet);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                    // Right pane: Checkout details (Only on Tablet side-by-side)
+                    if (isTablet)
+                      Expanded(
+                        flex: 2,
+                        child: activeOrder != null && selectedTable != null
+                            ? _buildCheckoutForm(context, selectedTable, activeOrder)
+                            : const Center(
+                                child: Text(
+                                  'Select an active table from the list to begin checkout.',
+                                  style: TextStyle(color: Color(0xFF64748B)),
+                                ),
+                              ),
+                      ),
+                  ],
+                ),
+    );
+  }
+
+  Widget _buildTableCard(TableModel table, OrderModel? order, bool isSelected, bool isTablet) {
+    final hasBillingStatus = table.status == 'BILLING';
+    final accentColor = hasBillingStatus ? const Color(0xFFE65100) : const Color(0xFF003893);
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedTableId = table.id;
+            _discountPercentage = 0.0;
+            if (!isTablet) {
+              _mobileShowCheckout = true;
+            }
+          });
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? accentColor.withAlpha(20) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? accentColor : const Color(0xFFE2E8F0),
+              width: isSelected ? 1.5 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(8),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    color: accentColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: accentColor.withAlpha(25),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        table.tableNumber,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: accentColor,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          color: const Color(0xFFF8F9FA),
-                          child: Text(
-                            'Active Tables (${billingTables.length})',
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                        Text(
+                          'Table ${table.tableNumber}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFF1E293B),
                           ),
                         ),
-                        Expanded(
-                          child: ListView.separated(
-                            itemCount: billingTables.length,
-                            separatorBuilder: (context, index) => const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final table = billingTables[index];
-                              final isSelected = table.id == _selectedTableId;
-                              final tableOrder = orderState.activeOrders[table.id];
-
-                              return ListTile(
-                                tileColor: isSelected ? const Color(0xFFFFF3E0) : null,
-                                leading: CircleAvatar(
-                                  backgroundColor: table.status == 'BILLING'
-                                      ? const Color(0xFFE65100)
-                                      : const Color(0xFF003893),
-                                  foregroundColor: Colors.white,
-                                  child: Text(table.tableNumber),
-                                ),
-                                title: Text(
-                                  'Table ${table.tableNumber}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text(
-                                  'Status: ${table.status} • Total: NPR ${tableOrder?.subtotal ?? 0}',
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                                trailing: const Icon(Icons.chevron_right, size: 16),
-                                onTap: () {
-                                  setState(() {
-                                    _selectedTableId = table.id;
-                                    _discountPercentage = 0.0; // Reset discount on table switch
-                                  });
-                                },
-                              );
-                            },
+                        const SizedBox(height: 2),
+                        Text(
+                          order != null
+                              ? '${order.items.length} items • NPR ${order.subtotal.toStringAsFixed(2)}'
+                              : 'No active items',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF64748B),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-                // Right pane: Billing calculations and Checkout
-                if (isTablet || selectedTable != null)
-                  Expanded(
-                    flex: isTablet ? 2 : 3,
-                    child: activeOrder != null && selectedTable != null
-                        ? _buildCheckoutForm(context, selectedTable, activeOrder)
-                        : const Center(
-                            child: Text('Select an active table from the list to begin checkout.'),
-                          ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: hasBillingStatus
+                            ? const Color(0xFFFFF3E0)
+                            : const Color(0xFFEBF3FF),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        table.status,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: accentColor,
+                        ),
+                      ),
+                    ),
                   ),
-              ],
+                ],
+              ),
             ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildCheckoutForm(BuildContext context, TableModel table, OrderModel order) {
-    // Math logic based on Nepalese VAT & Service Charge specs:
     final double subtotal = order.subtotal;
     final double discountAmount = subtotal * (_discountPercentage / 100);
     final double taxableSubtotal = subtotal - discountAmount;
@@ -154,7 +276,7 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
         children: [
           // Selected Table Bill Header
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             color: Colors.white,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,8 +291,9 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        'Order: ${order.id} • Date: ${order.createdAt.hour}:${order.createdAt.minute}',
+                        'Order: ${order.id.split('_').last} • Date: ${order.createdAt.hour.toString().padLeft(2, '0')}:${order.createdAt.minute.toString().padLeft(2, '0')}',
                         style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -186,63 +309,111 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFE65100),
                     side: const BorderSide(color: Color(0xFFE65100)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ],
             ),
           ),
-          // Items List Summary
+          // Items List Summary (Receipt Card style)
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(20),
-              itemCount: order.items.length,
-              separatorBuilder: (context, index) => const Divider(),
-              itemBuilder: (context, index) {
-                final item = order.items[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${item.quantity} x ${item.menuItem.name}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (item.selectedModifiers.isNotEmpty)
-                              Text(
-                                item.selectedModifiers.map((m) => m.name).join(', '),
-                                style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'NPR ${item.itemTotal.toStringAsFixed(2)}',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                      ),
-                    ],
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(10),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
-                );
-              },
+                ],
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      color: const Color(0xFFF8F9FA),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('ITEM DESCRIPTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                          Text('AMOUNT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: order.items.length,
+                        separatorBuilder: (context, index) => const Divider(
+                          color: Color(0xFFF1F5F9),
+                          thickness: 1,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = order.items[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${item.quantity} x ${item.menuItem.name}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (item.selectedModifiers.isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          item.selectedModifiers.map((m) => m.name).join(', '),
+                                          style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                      if (item.notes.isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Note: "${item.notes}"',
+                                          style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Color(0xFFC8102E)),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'NPR ${item.itemTotal.toStringAsFixed(2)}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           // Invoice summary & payment configuration
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Discounts Row
                 Wrap(
                   alignment: WrapAlignment.spaceBetween,
                   crossAxisAlignment: WrapCrossAlignment.center,
@@ -256,19 +427,15 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         _buildDiscountButton(0.0),
-                        const SizedBox(width: 6),
                         _buildDiscountButton(10.0),
-                        const SizedBox(width: 6),
                         _buildDiscountButton(15.0),
-                        const SizedBox(width: 6),
                         _buildCustomDiscountButton(),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 const Divider(),
-                // Invoicing Details Table
                 _buildSummaryLine('Subtotal', 'NPR ${subtotal.toStringAsFixed(2)}'),
                 if (discountAmount > 0)
                   _buildSummaryLine(
@@ -286,8 +453,7 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
                   fontSize: 18,
                   textColor: const Color(0xFFE65100),
                 ),
-                const SizedBox(height: 16),
-                // Payment Method Selector
+                const SizedBox(height: 12),
                 const Text('Payment Method:', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
                 const SizedBox(height: 8),
                 Row(
@@ -299,8 +465,7 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
                     _buildPaymentMethodButton('CARD', Icons.credit_card),
                   ],
                 ),
-                const SizedBox(height: 20),
-                // Submit Settlement
+                const SizedBox(height: 16),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE65100),
@@ -415,7 +580,6 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE65100)),
             onPressed: () {
-              // Mocks successful verify pin
               if (pin == '1111') {
                 Navigator.pop(context);
                 _applyCustomDiscountDialog();
@@ -508,6 +672,7 @@ class _BillingTerminalScreenState extends ConsumerState<BillingTerminalScreen> {
     ref.read(orderProvider.notifier).settleOrder(tableId);
     setState(() {
       _selectedTableId = null;
+      _mobileShowCheckout = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

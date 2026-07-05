@@ -38,7 +38,7 @@ class OrderNotifier extends StateNotifier<OrderState> {
 
   OrderNotifier(this._ref)
       : super(OrderState(
-          activeOrders: _initialOrders,
+          activeOrders: const {},
           cartItems: [],
           selectedTableId: null,
         )) {
@@ -55,102 +55,31 @@ class OrderNotifier extends StateNotifier<OrderState> {
     });
   }
 
-  static final Map<String, OrderModel> _initialOrders = {
-    't2': OrderModel(
-      id: 'ord_t2',
-      tableId: 't2',
-      status: 'PREPARING',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 8)),
-      items: [
-        OrderItem(
-          menuItem: MenuItem(
-            id: 'm1',
-            categoryId: 'cat_momo',
-            name: 'Chicken Momo',
-            description: '',
-            price: 250.00,
-            isVeg: false,
-            isAvailable: true,
-            modifiers: [],
-          ),
-          quantity: 2,
-          selectedModifiers: [
-            MenuItemModifier(id: 'mod1', name: 'Cheese Momo (Add-on)', price: 60.00, isAvailable: true),
-          ],
-          notes: 'Spicy, soup separate',
-        ),
-      ],
-    ),
-    'r1': OrderModel(
-      id: 'ord_r1',
-      tableId: 'r1',
-      status: 'PENDING',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 22)),
-      items: [
-        OrderItem(
-          menuItem: MenuItem(
-            id: 'm3',
-            categoryId: 'cat_main',
-            name: 'Chicken Chowmein',
-            description: '',
-            price: 280.00,
-            isVeg: false,
-            isAvailable: true,
-            modifiers: [],
-          ),
-          quantity: 1,
-          selectedModifiers: [],
-          notes: 'Extra spicy',
-        ),
-        OrderItem(
-          menuItem: MenuItem(
-            id: 'm4',
-            categoryId: 'cat_bev',
-            name: 'Iced Americano',
-            description: '',
-            price: 150.00,
-            isVeg: true,
-            isAvailable: true,
-            modifiers: [],
-          ),
-          quantity: 1,
-          selectedModifiers: [
-            MenuItemModifier(id: 'mod5', name: 'Caramel Syrup', price: 40.00, isAvailable: true),
-          ],
-          notes: 'No sugar',
-        ),
-      ],
-    ),
-    'r3': OrderModel(
-      id: 'ord_r3',
-      tableId: 'r3',
-      status: 'READY',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 12)),
-      items: [
-        OrderItem(
-          menuItem: MenuItem(
-            id: 'm2',
-            categoryId: 'cat_momo',
-            name: 'Veg Momo',
-            description: '',
-            price: 200.00,
-            isVeg: true,
-            isAvailable: true,
-            modifiers: [],
-          ),
-          quantity: 2,
-          selectedModifiers: [],
-          notes: '',
-        ),
-      ],
-    ),
-  };
+  Future<void> fetchActiveOrders() async {
+    try {
+      final dio = _ref.read(dioProvider);
+      final response = await dio.get('/orders');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'] as List<dynamic>;
+        final Map<String, OrderModel> loadedOrders = {};
+        for (final item in data) {
+          final order = OrderModel.fromSocketJson(item as Map<String, dynamic>);
+          loadedOrders[order.tableId] = order;
+        }
+        state = state.copyWith(activeOrders: loadedOrders);
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('Failed to fetch active orders from server: $e');
+    }
+  }
 
   void _initSocket() {
     final authState = _ref.read(authProvider);
     if (authState.accessToken == null || authState.user == null) return;
 
     _disconnectSocket();
+    fetchActiveOrders();
 
     try {
       _socket = io.io(
@@ -175,6 +104,15 @@ class OrderNotifier extends StateNotifier<OrderState> {
       _socket!.on('order:new', (data) {
         // Dynamically pull latest order state
         _ref.read(tableProvider.notifier).fetchTables();
+        try {
+          final newOrder = OrderModel.fromSocketJson(data as Map<String, dynamic>);
+          final updatedOrders = Map<String, OrderModel>.from(state.activeOrders);
+          updatedOrders[newOrder.tableId] = newOrder;
+          state = state.copyWith(activeOrders: updatedOrders);
+        } catch (e) {
+          // ignore: avoid_print
+          print('Error parsing realtime order: $e');
+        }
       });
 
       _socket!.on('order:updated', (data) {
@@ -208,7 +146,7 @@ class OrderNotifier extends StateNotifier<OrderState> {
 
     if (targetTableId != null) {
       if (status == 'SETTLED') {
-        _ref.read(tableProvider.notifier).updateTableStatus(targetTableId!, 'FREE');
+        _ref.read(tableProvider.notifier).updateTableStatus(targetTableId!, 'DIRTY');
         updatedOrders.remove(targetTableId);
       } else if (status == 'BILLING') {
         _ref.read(tableProvider.notifier).updateTableStatus(targetTableId!, 'BILLING');
@@ -218,21 +156,58 @@ class OrderNotifier extends StateNotifier<OrderState> {
   }
 
   void selectTable(String tableId) {
+    final existingOrder = state.activeOrders[tableId];
+    final cartItems = existingOrder != null
+        ? existingOrder.items.map((item) => OrderItem(
+            menuItem: item.menuItem,
+            quantity: item.quantity,
+            selectedModifiers: List.from(item.selectedModifiers),
+            notes: item.notes,
+            isPlaced: true,
+          )).toList()
+        : <OrderItem>[];
+
     state = state.copyWith(
       selectedTableId: tableId,
-      cartItems: [],
+      cartItems: cartItems,
     );
   }
 
   void addToCart(MenuItem item, List<MenuItemModifier> modifiers, String notes, int quantity) {
-    final newItem = OrderItem(
-      menuItem: item,
-      quantity: quantity,
-      selectedModifiers: modifiers,
-      notes: notes,
-    );
+    final updatedCart = List<OrderItem>.from(state.cartItems);
+    
+    final existingIndex = updatedCart.indexWhere((cartItem) {
+      if (cartItem.isPlaced) return false; // Do NOT merge with already placed items
+      if (cartItem.menuItem.id != item.id) return false;
+      if (cartItem.notes != notes) return false;
+      if (cartItem.selectedModifiers.length != modifiers.length) return false;
+      
+      for (final mod in modifiers) {
+        if (!cartItem.selectedModifiers.any((m) => m.id == mod.id)) return false;
+      }
+      return true;
+    });
+
+    if (existingIndex != -1) {
+      updatedCart[existingIndex] = OrderItem(
+        menuItem: updatedCart[existingIndex].menuItem,
+        quantity: updatedCart[existingIndex].quantity + quantity,
+        selectedModifiers: updatedCart[existingIndex].selectedModifiers,
+        notes: updatedCart[existingIndex].notes,
+        isPlaced: updatedCart[existingIndex].isPlaced,
+      );
+    } else {
+      updatedCart.add(OrderItem(
+        menuItem: item,
+        quantity: quantity,
+        selectedModifiers: modifiers,
+        notes: notes,
+        isPlaced: false,
+      ));
+    }
+
     state = state.copyWith(
-      cartItems: [...state.cartItems, newItem],
+      cartItems: updatedCart,
     );
   }
 
@@ -259,44 +234,98 @@ class OrderNotifier extends StateNotifier<OrderState> {
     final tableId = state.selectedTableId;
     if (tableId == null || state.cartItems.isEmpty) return;
 
-    final newOrder = OrderModel(
-      id: 'ord_${DateTime.now().millisecondsSinceEpoch}',
-      tableId: tableId,
-      items: List.from(state.cartItems),
-      status: 'PENDING',
-      createdAt: DateTime.now(),
-    );
+    final existingOrder = state.activeOrders[tableId];
 
-    // Optimistic UI updates
-    final updatedOrders = Map<String, OrderModel>.from(state.activeOrders);
-    updatedOrders[tableId] = newOrder;
-    _ref.read(tableProvider.notifier).updateTableStatus(tableId, 'OCCUPIED');
-
-    state = state.copyWith(
-      activeOrders: updatedOrders,
-      cartItems: [],
-    );
-
-    try {
-      final dio = _ref.read(dioProvider);
-      final response = await dio.post('/orders', data: newOrder.toJson());
-      
-      if (response.statusCode == 200) {
-        final authState = _ref.read(authProvider);
-        // Dispatch real-time Socket notification
-        _socket?.emit('order:create', {
-          'restaurantId': authState.user?.restaurantId,
-          'orderId': newOrder.id,
-          'payload': newOrder.toJson(),
-        });
+    if (existingOrder != null) {
+      // Update local state: mark all as placed and update active orders
+      for (final item in state.cartItems) {
+        item.isPlaced = true;
       }
-    } catch (e) {
-      // Queue order submission in sync service cache
-      await _ref.read(syncServiceProvider).queueMutation(
-        '/orders',
-        'POST',
-        newOrder.toJson(),
+
+      final updatedOrder = existingOrder.copyWith(
+        items: List.from(state.cartItems),
+        status: 'PENDING', // Reset status so kitchen is alerted of new items
       );
+
+      final updatedOrders = Map<String, OrderModel>.from(state.activeOrders);
+      updatedOrders[tableId] = updatedOrder;
+      state = state.copyWith(
+        activeOrders: updatedOrders,
+        cartItems: [],
+      );
+
+      try {
+        final dio = _ref.read(dioProvider);
+        final response = await dio.put(
+          '/orders/${existingOrder.id}/items',
+          data: {
+            'items': updatedOrder.items.map((i) => i.toJson()).toList(),
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final authState = _ref.read(authProvider);
+          // Dispatch real-time Socket notification with the full updated order
+          _socket?.emit('order:create', {
+            'restaurantId': authState.user?.restaurantId,
+            'orderId': updatedOrder.id,
+            'payload': updatedOrder.toSocketJson(),
+          });
+        }
+      } catch (e) {
+        // Queue incremental order submission in sync service cache
+        await _ref.read(syncServiceProvider).queueMutation(
+          '/orders/${existingOrder.id}/items',
+          'PUT',
+          {
+            'items': updatedOrder.items.map((i) => i.toJson()).toList(),
+          },
+        );
+      }
+    } else {
+      // First-time Order Creation
+      for (final item in state.cartItems) {
+        item.isPlaced = true;
+      }
+
+      final newOrder = OrderModel(
+        id: 'ord_${DateTime.now().millisecondsSinceEpoch}',
+        tableId: tableId,
+        items: List.from(state.cartItems),
+        status: 'PENDING',
+        createdAt: DateTime.now(),
+      );
+
+      // Optimistic UI updates
+      final updatedOrders = Map<String, OrderModel>.from(state.activeOrders);
+      updatedOrders[tableId] = newOrder;
+      _ref.read(tableProvider.notifier).updateTableStatus(tableId, 'OCCUPIED');
+      state = state.copyWith(
+        activeOrders: updatedOrders,
+        cartItems: [],
+      );
+
+      try {
+        final dio = _ref.read(dioProvider);
+        final response = await dio.post('/orders', data: newOrder.toJson());
+        
+        if (response.statusCode == 200) {
+          final authState = _ref.read(authProvider);
+          // Dispatch real-time Socket notification
+          _socket?.emit('order:create', {
+            'restaurantId': authState.user?.restaurantId,
+            'orderId': newOrder.id,
+            'payload': newOrder.toSocketJson(),
+          });
+        }
+      } catch (e) {
+        // Queue order submission in sync service cache
+        await _ref.read(syncServiceProvider).queueMutation(
+          '/orders',
+          'POST',
+          newOrder.toJson(),
+        );
+      }
     }
   }
 
@@ -352,6 +381,14 @@ class OrderNotifier extends StateNotifier<OrderState> {
         'orderId': order.id,
         'discount': 0.0,
         'paymentMethod': 'CASH',
+      });
+
+      final authState = _ref.read(authProvider);
+      // Dispatch status update socket notification to clear table in other devices
+      _socket?.emit('order:update-status', {
+        'restaurantId': authState.user?.restaurantId,
+        'orderId': order.id,
+        'status': 'SETTLED',
       });
     } catch (e) {
       // Queue invoice settlement in sync service cache

@@ -409,17 +409,6 @@ class TableManagementScreen extends ConsumerWidget {
                   onPressed: () {
                     Navigator.pop(context);
                     ref.read(orderProvider.notifier).selectTable(table.id);
-                    // Add items from active order to cart
-                    if (activeOrder != null) {
-                      for (final item in activeOrder.items) {
-                        ref.read(orderProvider.notifier).addToCart(
-                              item.menuItem,
-                              item.selectedModifiers,
-                              item.notes,
-                              item.quantity,
-                            );
-                      }
-                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(

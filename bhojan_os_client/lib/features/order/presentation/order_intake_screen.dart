@@ -418,6 +418,11 @@ class _OrderIntakeScreenState extends ConsumerState<OrderIntakeScreen> {
 
   Widget _buildCartView(BuildContext context) {
     final orderState = ref.watch(orderProvider);
+    final tableList = ref.watch(tableProvider);
+    final selectedTable = tableList.firstWhere(
+      (t) => t.id == orderState.selectedTableId,
+      orElse: () => TableModel(id: '', tableNumber: '?', capacity: 0, section: '', status: 'FREE'),
+    );
     final total = _calculateCartTotal(orderState.cartItems);
 
     return Column(
@@ -444,9 +449,12 @@ class _OrderIntakeScreenState extends ConsumerState<OrderIntakeScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: item.isPlaced ? const Color(0xFFF1F5F9) : Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(
+                            color: item.isPlaced ? const Color(0xFFE2E8F0) : const Color(0xFFC8102E).withValues(alpha: 0.3),
+                            width: item.isPlaced ? 1 : 1.5,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,11 +463,38 @@ class _OrderIntakeScreenState extends ConsumerState<OrderIntakeScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    item.menuItem.name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          item.menuItem.name,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: item.isPlaced
+                                              ? const Color(0xFF2E7D32).withValues(alpha: 0.1)
+                                              : const Color(0xFF003893).withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          item.isPlaced ? 'SENT' : 'NEW',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: item.isPlaced ? const Color(0xFF2E7D32) : const Color(0xFF003893),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                                const SizedBox(width: 8),
                                 Text(
                                   'NPR ${item.itemTotal.toStringAsFixed(2)}',
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF003893)),
@@ -544,7 +579,7 @@ class _OrderIntakeScreenState extends ConsumerState<OrderIntakeScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: orderState.cartItems.isEmpty
+                onPressed: !_hasChanges(orderState.cartItems, orderState.activeOrders[selectedTable.id]?.items)
                     ? null
                     : () {
                         ref.read(orderProvider.notifier).submitOrder();
@@ -553,9 +588,11 @@ class _OrderIntakeScreenState extends ConsumerState<OrderIntakeScreen> {
                         );
                         Navigator.pop(context);
                       },
-                child: const Text(
-                  'Send to Kitchen (Confirm KOT)',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                child: Text(
+                  orderState.activeOrders[selectedTable.id] != null
+                      ? 'Update Order & Send KOT'
+                      : 'Send to Kitchen (Confirm KOT)',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -580,6 +617,23 @@ class _OrderIntakeScreenState extends ConsumerState<OrderIntakeScreen> {
         );
       },
     );
+  }
+
+  bool _hasChanges(List<OrderItem> cart, List<OrderItem>? original) {
+    if (original == null) return cart.isNotEmpty;
+    if (cart.length != original.length) return true;
+    for (final cItem in cart) {
+      final oItemIndex = original.indexWhere((oi) => oi.menuItem.id == cItem.menuItem.id);
+      if (oItemIndex == -1) return true;
+      final oItem = original[oItemIndex];
+      if (cItem.quantity != oItem.quantity) return true;
+      if (cItem.notes != oItem.notes) return true;
+      if (cItem.selectedModifiers.length != oItem.selectedModifiers.length) return true;
+      for (final mod in cItem.selectedModifiers) {
+        if (!oItem.selectedModifiers.any((om) => om.id == mod.id)) return true;
+      }
+    }
+    return false;
   }
 
   double _calculateCartTotal(List<OrderItem> items) {

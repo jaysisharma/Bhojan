@@ -5,12 +5,14 @@ class OrderItem {
   int quantity;
   final List<MenuItemModifier> selectedModifiers;
   final String notes;
+  bool isPlaced;
 
   OrderItem({
     required this.menuItem,
     this.quantity = 1,
     required this.selectedModifiers,
     this.notes = '',
+    this.isPlaced = false,
   });
 
   double get itemTotal {
@@ -25,6 +27,27 @@ class OrderItem {
       'notes': notes,
       'modifierIds': selectedModifiers.map((m) => m.id).toList(),
     };
+  }
+
+  Map<String, dynamic> toSocketJson() {
+    return {
+      'menuItem': menuItem.toJson(),
+      'quantity': quantity,
+      'notes': notes,
+      'selectedModifiers': selectedModifiers.map((m) => m.toJson()).toList(),
+      'isPlaced': isPlaced,
+    };
+  }
+
+  factory OrderItem.fromSocketJson(Map<String, dynamic> json) {
+    var mods = json['selectedModifiers'] as List<dynamic>? ?? [];
+    return OrderItem(
+      menuItem: MenuItem.fromJson(json['menuItem'] as Map<String, dynamic>),
+      quantity: json['quantity'] as int? ?? 1,
+      notes: json['notes'] as String? ?? '',
+      selectedModifiers: mods.map((m) => MenuItemModifier.fromJson(m as Map<String, dynamic>)).toList(),
+      isPlaced: json['isPlaced'] as bool? ?? false,
+    );
   }
 }
 
@@ -71,6 +94,27 @@ class OrderModel {
       'status': status,
       'subtotal': subtotal,
     };
+  }
+
+  Map<String, dynamic> toSocketJson() {
+    return {
+      'id': id,
+      'tableId': tableId,
+      'items': items.map((i) => i.toSocketJson()).toList(),
+      'status': status,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  factory OrderModel.fromSocketJson(Map<String, dynamic> json) {
+    var itemsList = json['items'] as List<dynamic>? ?? [];
+    return OrderModel(
+      id: json['id'] as String,
+      tableId: json['tableId'] as String,
+      items: itemsList.map((i) => OrderItem.fromSocketJson(i as Map<String, dynamic>)).toList(),
+      status: json['status'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
   }
 }
 
