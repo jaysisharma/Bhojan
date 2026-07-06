@@ -162,6 +162,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        elevation: 0,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
@@ -169,7 +170,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.015),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,7 +399,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
     }
 
-    // Categories selector widget
     Widget _buildTabSelector() {
       final tabStyles = [
         {'title': 'Operations', 'icon': Icons.bolt_rounded},
@@ -401,10 +407,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ];
 
       return Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE2E8F0),
-          borderRadius: BorderRadius.circular(12),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+          ),
         ),
         child: Row(
           children: List.generate(tabStyles.length, (index) {
@@ -417,26 +423,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   });
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.white : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(10),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            )
-                          ]
-                        : [],
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isSelected
+                            ? const Color(0xFF003893)
+                            : Colors.transparent,
+                        width: 2.5,
+                      ),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         tabStyles[index]['icon'] as IconData,
-                        size: 16,
+                        size: 15,
                         color: isSelected
                             ? const Color(0xFF003893)
                             : const Color(0xFF64748B),
@@ -445,8 +448,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Text(
                         tabStyles[index]['title'] as String,
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.w500,
                           color: isSelected
                               ? const Color(0xFF003893)
                               : const Color(0xFF64748B),
@@ -628,8 +632,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 24),
             _buildMiniTableMap(tables),
             const SizedBox(height: 24),
-            _buildActiveShiftCard(),
-            const SizedBox(height: 24),
             _buildVerticalNotificationFeed(staffRole),
           ],
         ],
@@ -642,15 +644,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         children: [
           // Live Station Drawer badges
           _buildStatusHeader(context),
-          const SizedBox(height: 20),
-
-          // Active Drawer shift stats
-          _buildActiveShiftCard(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // Live Table Grid map
           _buildMiniTableMap(tables),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // Live operations Alerts Feed
           _buildVerticalNotificationFeed(staffRole),
@@ -735,66 +733,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildWelcomeBanner(String staffName, String staffRole) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF003893)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF003893).withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.white.withValues(alpha: 0.15),
+            radius: 22,
+            backgroundColor: const Color(0xFFE2E8F0),
             child: const Icon(
               Icons.person_outline_rounded,
-              color: Colors.white,
-              size: 26,
+              color: Color(0xFF0F172A),
+              size: 22,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Namaste, $staffName',
+          const SizedBox(width: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Namaste, $staffName',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  staffRole,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Color(0xFF64748B),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Role: $staffRole',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -936,12 +917,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.015),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -986,201 +966,83 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildMiniTableMap(List<TableModel> tables) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.015),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Interactive Floor Map Preview',
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B)),
-            ),
-            const SizedBox(height: 12),
-            tables.isEmpty
-                ? const Text('No tables configured.',
-                    style: TextStyle(color: Color(0xFF64748B), fontSize: 13))
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: tables.map((table) {
-                      final isBilling = table.status == 'BILLING';
-                      final isOccupied = table.status == 'OCCUPIED';
-                      final isDirty = table.status == 'DIRTY';
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Interactive Floor Map Preview',
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B)),
+          ),
+          const SizedBox(height: 12),
+          tables.isEmpty
+              ? const Text('No tables configured.',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13))
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: tables.map((table) {
+                    final isBilling = table.status == 'BILLING';
+                    final isOccupied = table.status == 'OCCUPIED';
+                    final isDirty = table.status == 'DIRTY';
 
-                      Color statusColor =
-                          const Color(0xFF2E7D32); // FREE = Green
-                      if (isBilling) {
-                        statusColor =
-                            const Color(0xFFE65100); // BILLING = Orange
-                      } else if (isOccupied) {
-                        statusColor =
-                            const Color(0xFF003893); // OCCUPIED = Blue
-                      } else if (isDirty) {
-                        statusColor =
-                            const Color(0xFF78909C); // DIRTY = Grey-blue
-                      }
+                    Color statusColor = const Color(0xFF2E7D32); // FREE = Green
+                    if (isBilling) {
+                      statusColor = const Color(0xFFE65100); // BILLING = Orange
+                    } else if (isOccupied) {
+                      statusColor = const Color(0xFF003893); // OCCUPIED = Blue
+                    } else if (isDirty) {
+                      statusColor =
+                          const Color(0xFF78909C); // DIRTY = Grey-blue
+                    }
 
-                      return InkWell(
-                        onTap: () {
-                          ref
-                              .read(orderProvider.notifier)
-                              .selectTable(table.id);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const OrderIntakeScreen()),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(30),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: statusColor, width: 2),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            table.tableNumber,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: statusColor,
-                            ),
+                    return InkWell(
+                      onTap: () {
+                        ref.read(orderProvider.notifier).selectTable(table.id);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const OrderIntakeScreen()),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: statusColor, width: 2),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          table.tableNumber,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActiveShiftCard() {
-    final shiftState = ref.watch(shiftProvider);
-    final activeShift = shiftState.activeShift;
-
-    if (activeShift == null) {
-      return Card(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
-        ),
-        elevation: 0,
-        child: const Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: Color(0xFFC8102E)),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'No active shift drawer. Open a shift to start operations.',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
-      ),
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Active Cash Drawer',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B)),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'OPEN',
-                    style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2E7D32)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Cashier:',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                Text(activeShift.openedByName ?? 'Unknown',
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B))),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Opening Cash:',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                Text('NPR ${activeShift.openingCash.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B))),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Started At:',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                Text(
-                    activeShift.openedAt.toLocal().toString().substring(11, 16),
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B))),
-              ],
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -1267,27 +1129,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     if (alerts.isEmpty) {
-      return Card(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.015),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        elevation: 0,
-        child: const Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Icon(Icons.done_all_rounded, color: Color(0xFF2E7D32)),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'All stations online. No warnings.',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                ),
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            const Icon(Icons.done_all_rounded, color: Color(0xFF2E7D32)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'All stations online. No warnings.',
+                style: TextStyle(fontSize: 13, color: const Color(0xFF64748B)),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
@@ -1313,12 +1178,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ...alerts.map((alert) {
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: alert['color'].withValues(alpha: 0.15), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.012),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
