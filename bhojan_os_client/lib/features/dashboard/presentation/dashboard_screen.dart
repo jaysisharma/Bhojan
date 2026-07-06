@@ -15,6 +15,7 @@ import '../../table/presentation/table_notifier.dart';
 import '../../menu/presentation/menu_notifier.dart';
 import '../../order/presentation/order_notifier.dart';
 import '../../order/presentation/order_intake_screen.dart';
+import '../../reports/presentation/reports_notifier.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -24,7 +25,33 @@ class DashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final tables = ref.watch(tableProvider);
     final orderState = ref.watch(orderProvider);
+    final reportsState = ref.watch(reportsProvider);
     final billingTables = tables.where((t) => t.status == 'OCCUPIED' || t.status == 'BILLING').toList();
+
+    // Today's Gross Sales
+    String salesValue = 'Rs. 0.00';
+    String salesSubtitle = 'Sales this shift';
+    if (reportsState.isLoading) {
+      salesValue = 'Loading...';
+    } else if (reportsState.report != null) {
+      salesValue = 'Rs. ${reportsState.report!.totalSales.toStringAsFixed(2)}';
+      salesSubtitle = 'Avg: Rs. ${reportsState.report!.avgOrderValue.toStringAsFixed(0)} / order';
+    } else if (reportsState.errorMessage != null) {
+      salesValue = 'Error';
+    }
+
+    // Active KOT Orders
+    final activeKOTCount = orderState.activeOrders.values
+        .where((o) => o.status == 'PENDING' || o.status == 'PREPARING' || o.status == 'READY')
+        .length;
+    final activeKOTValue = '$activeKOTCount Kitchen Ticket${activeKOTCount == 1 ? "" : "s"}';
+
+    // Table Occupancy
+    final occupiedTables = tables.where((t) => t.status == 'OCCUPIED' || t.status == 'BILLING').length;
+    final totalTables = tables.length;
+    final occupancyValue = '$occupiedTables / $totalTables Table${totalTables == 1 ? "" : "s"}';
+    final double occupancyPercentage = totalTables == 0 ? 0.0 : (occupiedTables / totalTables) * 100;
+    final occupancySubtitle = '${occupancyPercentage.toStringAsFixed(0)}% capacity active';
 
     final user = authState.user;
     final staffName = user?.name ?? 'Staff Name';
@@ -363,6 +390,8 @@ class DashboardScreen extends ConsumerWidget {
               ref.read(tableProvider.notifier).fetchTables(),
               ref.read(shiftProvider.notifier).fetchActiveShift(),
               ref.read(menuProvider.notifier).fetchMenu(),
+              ref.read(orderProvider.notifier).fetchActiveOrders(),
+              ref.read(reportsProvider.notifier).fetchDashboardReport(),
             ]);
           },
           color: const Color(0xFF003893),
@@ -394,7 +423,14 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  _buildInsightsGrid(screenWidth),
+                  _buildInsightsGrid(
+                    screenWidth: screenWidth,
+                    salesValue: salesValue,
+                    salesSubtitle: salesSubtitle,
+                    activeKOTValue: activeKOTValue,
+                    occupancyValue: occupancyValue,
+                    occupancySubtitle: occupancySubtitle,
+                  ),
                   const SizedBox(height: 28),
                 ],
 
@@ -655,27 +691,34 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInsightsGrid(double screenWidth) {
+  Widget _buildInsightsGrid({
+    required double screenWidth,
+    required String salesValue,
+    required String salesSubtitle,
+    required String activeKOTValue,
+    required String occupancyValue,
+    required String occupancySubtitle,
+  }) {
     final columnsCount = screenWidth < 600 ? 1 : 3;
     final cards = [
       _buildInsightCard(
         title: "Today's Gross Sales",
-        value: 'Rs. 24,580.00',
-        subtitle: '+12% from yesterday',
+        value: salesValue,
+        subtitle: salesSubtitle,
         color: const Color(0xFF003893),
         icon: Icons.trending_up_rounded,
       ),
       _buildInsightCard(
         title: 'Active KOT Orders',
-        value: '6 Kitchen Tickets',
-        subtitle: 'Avg prep time: 14m',
+        value: activeKOTValue,
+        subtitle: 'KOT queue size',
         color: const Color(0xFF2E7D32),
         icon: Icons.soup_kitchen_rounded,
       ),
       _buildInsightCard(
         title: 'Table Occupancy',
-        value: '8 / 15 Tables',
-        subtitle: '53% capacity active',
+        value: occupancyValue,
+        subtitle: occupancySubtitle,
         color: const Color(0xFFE65100),
         icon: Icons.table_bar_rounded,
       ),
