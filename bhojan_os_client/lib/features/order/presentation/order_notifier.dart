@@ -83,7 +83,7 @@ class OrderNotifier extends StateNotifier<OrderState> {
 
     try {
       _socket = io.io(
-        'http://192.168.1.68:3000',
+        'http://192.168.1.76:3000',
         io.OptionBuilder()
             .setTransports(['websocket'])
             .disableAutoConnect()

@@ -364,7 +364,7 @@ class _ShiftManagementScreenState extends ConsumerState<ShiftManagementScreen> w
                       children: [
                         const Text('Cash Difference', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
                         Text(
-                          '${shift.cashDiff! >= 0 ? "+" : ""}NPR ${(shift.cashDiff ?? 0.0).toStringAsFixed(2)}',
+                          '${(shift.cashDiff ?? 0.0) >= 0 ? "+" : ""}NPR ${(shift.cashDiff ?? 0.0).toStringAsFixed(2)}',
                           style: TextStyle(fontWeight: FontWeight.bold, color: diffColor),
                         ),
                       ],

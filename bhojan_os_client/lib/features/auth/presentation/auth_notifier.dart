@@ -6,7 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../domain/auth_state.dart';
 
 // Base API URL. In Android emulators, 10.0.2.2 connects to host loopback.
-const String _baseUrl = 'http://192.168.1.68:3000/api/v1';
+const String _baseUrl = 'http://192.168.1.76:3000/api/v1';
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final Dio _dio = Dio();

@@ -5,7 +5,7 @@ import '../../features/auth/presentation/auth_notifier.dart';
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: 'http://192.168.1.68:3000/api/v1',
+      baseUrl: 'http://192.168.1.76:3000/api/v1',
       connectTimeout: const Duration(seconds: 5),
       receiveTimeout: const Duration(seconds: 5),
     ),

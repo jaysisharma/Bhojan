@@ -134,3 +134,73 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getActiveOrders = async (req: Request, res: Response) => {
+  try {
+    const restaurantId = req.user?.restaurantId;
+    if (!restaurantId) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        error: { message: 'Tenant context required.' },
+      });
+    }
+
+    const tenantPrisma = getTenantPrisma(restaurantId);
+    const orders = await tenantPrisma.order.findMany({
+      where: {
+        status: {
+          in: ['PENDING', 'PREPARING', 'READY', 'SERVED'],
+        },
+      },
+      include: {
+        orderItems: {
+          include: {
+            menuItem: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    const formattedOrders = orders.map((order) => ({
+      id: order.id,
+      tableId: order.tableId,
+      status: order.status,
+      createdAt: order.createdAt,
+      items: order.orderItems.map((item) => ({
+        quantity: item.quantity,
+        notes: item.notes || '',
+        isPlaced: true,
+        selectedModifiers: [],
+        menuItem: {
+          id: item.menuItem.id,
+          name: item.menuItem.name,
+          price: Number(item.menuItem.price),
+          description: item.menuItem.description,
+          imageUrl: item.menuItem.imageUrl,
+          isAvailable: item.menuItem.isAvailable,
+          categoryId: item.menuItem.categoryId,
+        },
+      })),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: formattedOrders,
+      error: null,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      data: null,
+      error: {
+        message: 'Failed to retrieve active orders.',
+        details: error.message,
+      },
+    });
+  }
+};

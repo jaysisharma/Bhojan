@@ -20,13 +20,18 @@ class DashboardReport {
 
   factory DashboardReport.fromJson(Map<String, dynamic> json) {
     final payData = json['payments'] as Map<String, dynamic>;
-    final payments = payData.map((key, val) => MapEntry(key, double.parse(val.toString())));
+    final payments =
+        payData.map((key, val) => MapEntry(key, double.parse(val.toString())));
 
     final topData = json['topSellingItems'] as List<dynamic>;
-    final topSellingItems = topData.map((x) => TopSellingItem.fromJson(x as Map<String, dynamic>)).toList();
+    final topSellingItems = topData
+        .map((x) => TopSellingItem.fromJson(x as Map<String, dynamic>))
+        .toList();
 
     final trendData = json['weeklyTrend'] as List<dynamic>;
-    final weeklyTrend = trendData.map((x) => TrendPoint.fromJson(x as Map<String, dynamic>)).toList();
+    final weeklyTrend = trendData
+        .map((x) => TrendPoint.fromJson(x as Map<String, dynamic>))
+        .toList();
 
     return DashboardReport(
       totalSales: double.parse(json['totalSales'].toString()),
@@ -94,8 +99,7 @@ class ReportsState {
 class ReportsNotifier extends StateNotifier<ReportsState> {
   final Ref _ref;
 
-  ReportsNotifier(this._ref)
-      : super(ReportsState(isLoading: false)) {
+  ReportsNotifier(this._ref) : super(ReportsState(isLoading: false)) {
     fetchDashboardReport();
   }
 
@@ -116,6 +120,7 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
   }
 }
 
-final reportsProvider = StateNotifierProvider<ReportsNotifier, ReportsState>((ref) {
+final reportsProvider =
+    StateNotifierProvider<ReportsNotifier, ReportsState>((ref) {
   return ReportsNotifier(ref);
 });
