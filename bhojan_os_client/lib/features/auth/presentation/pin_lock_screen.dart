@@ -48,7 +48,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen> {
         _isLoading = false;
         if (!success) {
           _pin = '';
-          _errorMessage = 'Incorrect PIN / गलत पिन';
+          final globalError = ref.read(authProvider).errorMessage;
+          _errorMessage = globalError ?? 'Incorrect PIN / गलत पिन';
         }
       });
     }

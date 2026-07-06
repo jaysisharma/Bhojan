@@ -128,12 +128,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
           return true;
         }
       }
+      state = state.copyWith(errorMessage: 'Incorrect PIN / गलत पिन');
       return false;
     } catch (e) {
       print('[DEBUG] Client verifyPin caught error: $e');
+      String msg = 'Connection failed: could not verify PIN';
       if (e is DioException) {
         print('[DEBUG] Dio Error response: ${e.response?.statusCode} -> ${e.response?.data}');
+        final serverMsg = e.response?.data['error']?['message'] as String?;
+        if (e.response?.statusCode == 403 || e.response?.statusCode == 401) {
+          msg = 'Session expired. Please log out & sign in with password.';
+        } else if (serverMsg != null) {
+          msg = serverMsg;
+        }
       }
+      state = state.copyWith(errorMessage: msg);
       return false;
     }
   }
