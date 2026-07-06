@@ -16,12 +16,20 @@ import '../../menu/presentation/menu_notifier.dart';
 import '../../order/presentation/order_notifier.dart';
 import '../../order/presentation/order_intake_screen.dart';
 import '../../reports/presentation/reports_notifier.dart';
+import '../../table/domain/table_model.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  int _selectedTabIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final tables = ref.watch(tableProvider);
     final orderState = ref.watch(orderProvider);
@@ -64,7 +72,7 @@ class DashboardScreen extends ConsumerWidget {
     final isKitchen = staffRole == 'KITCHEN';
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final columns = screenWidth < 600 ? 2 : (screenWidth < 950 ? 3 : 4);
+    final bool isWide = screenWidth > 900;
     final double ratio = screenWidth < 600 ? 1.30 : (screenWidth < 950 ? 1.40 : 1.50);
 
     Widget _buildModuleCard({
@@ -200,147 +208,438 @@ class DashboardScreen extends ConsumerWidget {
 
     final List<Widget> moduleCards = [];
 
-    // 1. Table Management (Owner, Manager, Cashier, Waiter)
-    if (isOwner || isManager || isCashier || isWaiter) {
+    // Operations Category (Index 0)
+    if (_selectedTabIndex == 0) {
+      if (isOwner || isManager || isCashier || isWaiter) {
+        moduleCards.add(
+          _buildModuleCard(
+            icon: Icons.table_restaurant_outlined,
+            title: isCashier ? 'Tables Ready to Pay' : 'Table Management',
+            desc: isCashier
+                ? 'Tables requesting bill & checkouts.'
+                : 'Take orders, check floor status maps.',
+            color: const Color(0xFF003893),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const TableManagementScreen()),
+              );
+            },
+          ),
+        );
+      }
+
+      if (isOwner || isManager || isWaiter || isKitchen) {
+        moduleCards.add(
+          _buildModuleCard(
+            icon: Icons.kitchen_outlined,
+            title: isKitchen ? 'Kitchen Queue' : 'Order Status (Kitchen)',
+            desc: isKitchen
+                ? 'Incoming orders, prepare & complete tickets.'
+                : 'Track active tables food preparation status.',
+            color: const Color(0xFF2E7D32),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const KitchenDisplayScreen()),
+              );
+            },
+          ),
+        );
+      }
+
       moduleCards.add(
         _buildModuleCard(
-          icon: Icons.table_restaurant_outlined,
-          title: isCashier ? 'Tables Ready to Pay' : 'Table Management',
-          desc: isCashier ? 'Tables requesting bill & checkouts.' : 'Take orders, check floor status maps.',
-          color: const Color(0xFF003893),
+          icon: Icons.inventory_2_outlined,
+          title: 'Menu & Stock',
+          desc: (isOwner || isManager || isKitchen)
+              ? 'Browse menu and manage item stock availability.'
+              : 'Check real-time menu item stock levels.',
+          color: const Color(0xFFE65100),
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const TableManagementScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const MenuManagementScreen()),
             );
           },
         ),
       );
     }
 
-    // 2. Kitchen Display / Queue (Owner, Manager, Waiter, Kitchen)
-    if (isOwner || isManager || isWaiter || isKitchen) {
+    // Finance & Sales Category (Index 1)
+    if (_selectedTabIndex == 1) {
+      if (isOwner || isManager || isCashier) {
+        moduleCards.add(
+          _buildModuleCard(
+            icon: Icons.receipt_long_outlined,
+            title: 'Billing & Invoices',
+            desc: 'Print receipts, check Fonepay/Cash splits.',
+            color: const Color(0xFFD84315),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const BillingTerminalScreen()),
+              );
+            },
+          ),
+        );
+      }
+
+      if (isOwner || isManager || isCashier) {
+        moduleCards.add(
+          _buildModuleCard(
+            icon: Icons.wallet_outlined,
+            title: 'Shift & Cash Drawer',
+            desc: 'Manage drawer opening/closing audits.',
+            color: const Color(0xFF8E24AA),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const ShiftManagementScreen()),
+              );
+            },
+          ),
+        );
+      }
+
+      if (isOwner || isManager) {
+        moduleCards.add(
+          _buildModuleCard(
+            icon: Icons.analytics_outlined,
+            title: 'Sales & Reports',
+            desc: 'Review sales ledger and statistics charts.',
+            color: const Color(0xFF5E35B1),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const SalesReportsScreen()),
+              );
+            },
+          ),
+        );
+      }
+    }
+
+    // Management & Settings Category (Index 2)
+    if (_selectedTabIndex == 2) {
+      if (isOwner || isManager) {
+        moduleCards.add(
+          _buildModuleCard(
+            icon: Icons.people_outline,
+            title: 'Staff Management',
+            desc: 'Manage roles, active credentials & PINs.',
+            color: const Color(0xFF00ACC1),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const StaffManagementScreen()),
+              );
+            },
+          ),
+        );
+      }
+
+      if (isOwner) {
+        moduleCards.add(
+          _buildModuleCard(
+            icon: Icons.settings_outlined,
+            title: 'Restaurant Settings',
+            desc: 'Configure taxes, profiles & printers.',
+            color: const Color(0xFFD81B60),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const RestaurantSettingsScreen()),
+              );
+            },
+          ),
+        );
+      }
+    }
+
+    if (moduleCards.isEmpty) {
       moduleCards.add(
-        _buildModuleCard(
-          icon: Icons.kitchen_outlined,
-          title: isKitchen ? 'Kitchen Queue' : 'Order Status (Kitchen)',
-          desc: isKitchen ? 'Incoming orders, prepare & complete tickets.' : 'Track active tables food preparation status.',
-          color: const Color(0xFF2E7D32),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const KitchenDisplayScreen()),
-            );
-          },
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 36.0),
+            child: Text(
+              'No modules available for your role under this tab.',
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+          ),
         ),
       );
     }
 
-    // 3. Menu & Stock (All roles)
-    moduleCards.add(
-      _buildModuleCard(
-        icon: Icons.inventory_2_outlined,
-        title: 'Menu & Stock',
-        desc: (isOwner || isManager || isKitchen)
-            ? 'Browse menu and manage item stock availability.'
-            : 'Check real-time menu item stock levels.',
-        color: const Color(0xFFE65100),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MenuManagementScreen()),
-          );
-        },
-      ),
-    );
+    // Categories selector widget
+    Widget _buildTabSelector() {
+      final tabStyles = [
+        {'title': 'Operations', 'icon': Icons.bolt_rounded},
+        {'title': 'Finance', 'icon': Icons.account_balance_wallet_rounded},
+        {'title': 'Management', 'icon': Icons.admin_panel_settings_rounded},
+      ];
 
-    // 4. Billing & Invoices (Owner, Manager, Cashier)
-    if (isOwner || isManager || isCashier) {
-      moduleCards.add(
-        _buildModuleCard(
-          icon: Icons.receipt_long_outlined,
-          title: 'Billing & Invoices',
-          desc: 'Print receipts, check Fonepay/Cash splits.',
-          color: const Color(0xFFD84315),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const BillingTerminalScreen()),
+      return Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE2E8F0),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: List.generate(tabStyles.length, (index) {
+            final isSelected = _selectedTabIndex == index;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedTabIndex = index;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(10),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            )
+                          ]
+                        : [],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        tabStyles[index]['icon'] as IconData,
+                        size: 16,
+                        color: isSelected ? const Color(0xFF003893) : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        tabStyles[index]['title'] as String,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? const Color(0xFF003893) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             );
-          },
+          }),
         ),
       );
     }
 
-    // 5. Shift & Cash Drawer (Owner, Manager, Cashier)
-    if (isOwner || isManager || isCashier) {
-      moduleCards.add(
-        _buildModuleCard(
-          icon: Icons.wallet_outlined,
-          title: 'Shift & Cash Drawer',
-          desc: 'Manage drawer opening/closing audits.',
-          color: const Color(0xFF8E24AA),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ShiftManagementScreen()),
-            );
-          },
-        ),
+    // Main layout contents
+    Widget _buildLeftPanel() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Welcome Banner
+          _buildWelcomeBanner(staffName, staffRole),
+          const SizedBox(height: 18),
+
+          // Status Badges (Mobile displays these at top, Desktop/Tablet keeps them clean)
+          if (!isWide) ...[
+            _buildStatusHeader(context),
+            const SizedBox(height: 24),
+          ],
+
+          // Real-time Insights (Gross Sales, Active Orders, Table Occupancy)
+          if (isOwner || isManager) ...[
+            const Text(
+              'Real-Time Insights',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildInsightsGrid(
+              screenWidth: screenWidth,
+              salesValue: salesValue,
+              salesSubtitle: salesSubtitle,
+              activeKOTValue: activeKOTValue,
+              occupancyValue: occupancyValue,
+              occupancySubtitle: occupancySubtitle,
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Waiter active orders horizontal slider
+          if (isWaiter && billingTables.isNotEmpty) ...[
+            const Text(
+              'My Active Tables',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 80,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: billingTables.length,
+                itemBuilder: (context, index) {
+                  final table = billingTables[index];
+                  final tableOrder = orderState.activeOrders[table.id];
+                  final isBilling = table.status == 'BILLING';
+                  final accentColor = isBilling
+                      ? const Color(0xFFE65100)
+                      : const Color(0xFF003893);
+                  return Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(5),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        ref
+                            .read(orderProvider.notifier)
+                            .selectTable(table.id);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const OrderIntakeScreen()),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 5,
+                              color: accentColor,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Table ${table.tableNumber}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    tableOrder != null
+                                        ? 'Rs. ${tableOrder.subtotal.toStringAsFixed(0)}'
+                                        : 'No order',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right,
+                                size: 16, color: Color(0xFF94A3B8)),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Operational Modules with Tab Selector
+          const Text(
+            'Operational Modules',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildTabSelector(),
+          const SizedBox(height: 16),
+          screenWidth < 600 || _selectedTabIndex == 2
+              ? Column(
+                  children: moduleCards,
+                )
+              : GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isWide ? 3 : 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: ratio,
+                  ),
+                  itemCount: moduleCards.length,
+                  itemBuilder: (context, index) => moduleCards[index],
+                ),
+          if (!isWide) ...[
+            const SizedBox(height: 24),
+            _buildMiniTableMap(tables),
+            const SizedBox(height: 24),
+            _buildActiveShiftCard(),
+            const SizedBox(height: 24),
+            _buildVerticalNotificationFeed(staffRole),
+          ],
+        ],
       );
     }
 
-    // 6. Staff Management (Owner, Manager)
-    if (isOwner || isManager) {
-      moduleCards.add(
-        _buildModuleCard(
-          icon: Icons.people_outline,
-          title: 'Staff Management',
-          desc: 'Manage roles, active credentials & PINs.',
-          color: const Color(0xFF00ACC1),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const StaffManagementScreen()),
-            );
-          },
-        ),
-      );
-    }
+    Widget _buildRightPanel() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Live Station Drawer badges
+          _buildStatusHeader(context),
+          const SizedBox(height: 20),
 
-    // 7. Restaurant Settings (Owner ONLY!)
-    if (isOwner) {
-      moduleCards.add(
-        _buildModuleCard(
-          icon: Icons.settings_outlined,
-          title: 'Restaurant Settings',
-          desc: 'Configure taxes, profiles & printers.',
-          color: const Color(0xFFD81B60),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RestaurantSettingsScreen()),
-            );
-          },
-        ),
-      );
-    }
+          // Active Drawer shift stats
+          _buildActiveShiftCard(),
+          const SizedBox(height: 20),
 
-    // 8. Sales & Reports (Owner, Manager)
-    if (isOwner || isManager) {
-      moduleCards.add(
-        _buildModuleCard(
-          icon: Icons.analytics_outlined,
-          title: 'Sales & Reports',
-          desc: 'Review sales ledger and statistics charts.',
-          color: const Color(0xFF5E35B1),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SalesReportsScreen()),
-            );
-          },
-        ),
+          // Live Table Grid map
+          _buildMiniTableMap(tables),
+          const SizedBox(height: 20),
+
+          // Live operations Alerts Feed
+          _buildVerticalNotificationFeed(staffRole),
+        ],
       );
     }
 
@@ -398,162 +697,22 @@ class DashboardScreen extends ConsumerWidget {
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Welcome Banner
-                _buildWelcomeBanner(staffName, staffRole),
-                const SizedBox(height: 18),
-                
-                // Status Indicator Row (Shift, Sync, Printer)
-                _buildStatusHeader(context, ref),
-                const SizedBox(height: 28),
-
-                // Real-time Action Center / Alerts
-                _buildNotificationCenter(staffRole, context, ref),
-
-                // Owner Real-time Insights (Only for admin roles)
-                if (isOwner || isManager) ...[
-                  const Text(
-                    'Real-Time Insights',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildInsightsGrid(
-                    screenWidth: screenWidth,
-                    salesValue: salesValue,
-                    salesSubtitle: salesSubtitle,
-                    activeKOTValue: activeKOTValue,
-                    occupancyValue: occupancyValue,
-                    occupancySubtitle: occupancySubtitle,
-                  ),
-                  const SizedBox(height: 28),
-                ],
-
-                // If waiter has active tables, show a quick overview horizontal slider
-                if (isWaiter && billingTables.isNotEmpty) ...[
-                  const Text(
-                    'My Active Tables',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 80,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: billingTables.length,
-                      itemBuilder: (context, index) {
-                        final table = billingTables[index];
-                        final tableOrder = orderState.activeOrders[table.id];
-                        final isBilling = table.status == 'BILLING';
-                        final accentColor = isBilling ? const Color(0xFFE65100) : const Color(0xFF003893);
-                        return Container(
-                          width: 160,
-                          margin: const EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(5),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              ref.read(orderProvider.notifier).selectTable(table.id);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => OrderIntakeScreen()),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(16),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 5,
-                                    color: accentColor,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'Table ${table.tableNumber}',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: accentColor,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          tableOrder != null
-                                              ? 'Rs. ${tableOrder.subtotal.toStringAsFixed(0)}'
-                                              : 'No order',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(Icons.chevron_right, size: 16, color: Color(0xFF94A3B8)),
-                                  const SizedBox(width: 8),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-
-                const Text(
-                  'Operational Modules',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                screenWidth < 600
-                    ? Column(
-                        children: moduleCards,
-                      )
-                    : GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columns,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: ratio,
-                        ),
-                        itemCount: moduleCards.length,
-                        itemBuilder: (context, index) => moduleCards[index],
+            child: isWide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: _buildLeftPanel(),
                       ),
-              ],
-            ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        flex: 4,
+                        child: _buildRightPanel(),
+                      ),
+                    ],
+                  )
+                : _buildLeftPanel(),
           ),
         ),
       ),
@@ -562,7 +721,7 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildWelcomeBanner(String staffName, String staffRole) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF0F172A), Color(0xFF003893)],
@@ -581,12 +740,12 @@ class DashboardScreen extends ConsumerWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 28,
+            radius: 24,
             backgroundColor: Colors.white.withValues(alpha: 0.15),
             child: const Icon(
               Icons.person_outline_rounded,
               color: Colors.white,
-              size: 30,
+              size: 26,
             ),
           ),
           const SizedBox(width: 16),
@@ -597,14 +756,14 @@ class DashboardScreen extends ConsumerWidget {
                 Text(
                   'Namaste, $staffName',
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -612,7 +771,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: Text(
                     'Role: $staffRole',
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -626,35 +785,30 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusHeader(BuildContext context, WidgetRef ref) {
-    // 1. Shift state
+  Widget _buildStatusHeader(BuildContext context) {
     final shiftState = ref.watch(shiftProvider);
     final isShiftOpen = shiftState.activeShift != null;
-    
-    // 2. Sync Queue length
+
     final syncState = ref.watch(syncServiceProvider);
     final pendingSyncCount = syncState.queueLength;
 
     return Wrap(
-      spacing: 12,
-      runSpacing: 12,
+      spacing: 8,
+      runSpacing: 8,
       children: [
-        // Shift Badge
         _buildStatusBadge(
           icon: Icons.wallet_outlined,
-          label: isShiftOpen ? 'Shift Active' : 'Shift Drawer Closed',
+          label: isShiftOpen ? 'Shift Active' : 'Drawer Closed',
           color: isShiftOpen ? const Color(0xFF2E7D32) : const Color(0xFFC8102E),
         ),
-        // Sync Badge
         _buildStatusBadge(
           icon: pendingSyncCount > 0 ? Icons.sync_rounded : Icons.cloud_done_outlined,
-          label: pendingSyncCount > 0 ? 'Syncing ($pendingSyncCount pending)' : 'Cloud Synced',
+          label: pendingSyncCount > 0 ? 'Syncing ($pendingSyncCount)' : 'Cloud Synced',
           color: pendingSyncCount > 0 ? const Color(0xFFE65100) : const Color(0xFF2E7D32),
         ),
-        // Printer Badge
         _buildStatusBadge(
           icon: Icons.print_outlined,
-          label: 'Printer: Ready',
+          label: 'Printer: OK',
           color: const Color(0xFF2E7D32),
         ),
       ],
@@ -667,21 +821,21 @@ class DashboardScreen extends ConsumerWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -726,20 +880,24 @@ class DashboardScreen extends ConsumerWidget {
 
     if (columnsCount == 1) {
       return Column(
-        children: cards.map((c) => Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: c,
-        )).toList(),
+        children: cards
+            .map((c) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: c,
+                ))
+            .toList(),
       );
     }
 
     return Row(
-      children: cards.map((c) => Expanded(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6.0),
-          child: c,
-        ),
-      )).toList(),
+      children: cards
+          .map((c) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: c,
+                ),
+              ))
+          .toList(),
     );
   }
 
@@ -785,7 +943,7 @@ class DashboardScreen extends ConsumerWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1E293B),
             ),
@@ -804,8 +962,172 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildMiniTableMap(List<TableModel> tables) {
+    return Card(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Interactive Floor Map Preview',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            ),
+            const SizedBox(height: 12),
+            tables.isEmpty
+                ? const Text('No tables configured.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13))
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: tables.map((table) {
+                      final isBilling = table.status == 'BILLING';
+                      final isOccupied = table.status == 'OCCUPIED';
+                      final isDirty = table.status == 'DIRTY';
 
-  Widget _buildNotificationCenter(String role, BuildContext context, WidgetRef ref) {
+                      Color statusColor = const Color(0xFF2E7D32); // FREE = Green
+                      if (isBilling) {
+                        statusColor = const Color(0xFFE65100); // BILLING = Orange
+                      } else if (isOccupied) {
+                        statusColor = const Color(0xFF003893); // OCCUPIED = Blue
+                      } else if (isDirty) {
+                        statusColor = const Color(0xFF78909C); // DIRTY = Grey-blue
+                      }
+
+                      return InkWell(
+                        onTap: () {
+                          ref.read(orderProvider.notifier).selectTable(table.id);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const OrderIntakeScreen()),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: statusColor, width: 2),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            table.tableNumber,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveShiftCard() {
+    final shiftState = ref.watch(shiftProvider);
+    final activeShift = shiftState.activeShift;
+
+    if (activeShift == null) {
+      return Card(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        elevation: 0,
+        child: const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Color(0xFFC8102E)),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'No active shift drawer. Open a shift to start operations.',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Active Cash Drawer',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'OPEN',
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Cashier:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text(activeShift.openedByName ?? 'Unknown', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Opening Cash:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text('NPR ${activeShift.openingCash.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Started At:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text(activeShift.openedAt.toLocal().toString().substring(11, 16), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerticalNotificationFeed(String role) {
     final List<Map<String, dynamic>> alerts = [];
 
     final isOwner = role == 'OWNER';
@@ -884,115 +1206,104 @@ class DashboardScreen extends ConsumerWidget {
       ]);
     }
 
-    if (alerts.isEmpty) return const SizedBox.shrink();
+    if (alerts.isEmpty) {
+      return Card(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        elevation: 0,
+        child: const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Icon(Icons.done_all_rounded, color: Color(0xFF2E7D32)),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'All stations online. No warnings.',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.notifications_active_outlined, color: Color(0xFFC8102E), size: 18),
-            SizedBox(width: 8),
+            const Icon(Icons.notifications_active_outlined, color: Color(0xFFC8102E), size: 18),
+            const SizedBox(width: 8),
             Text(
-              'Action Center & Alerts',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
-              ),
+              'Action Center (${alerts.length})',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 95,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: alerts.length,
-            itemBuilder: (context, index) {
-              final alert = alerts[index];
-              return Container(
-                width: 280,
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: alert['color'].withValues(alpha: 0.25), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+        ...alerts.map((alert) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: alert['color'].withValues(alpha: 0.15), width: 1),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: alert['color'].withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(alert['icon'], color: alert['color'], size: 18),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: alert['color'].withValues(alpha: 0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(alert['icon'], color: alert['color'], size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  alert['title'],
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    color: Color(0xFF1E293B),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Text(
-                                alert['time'],
-                                style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8)),
-                              ),
-                            ],
+                          Expanded(
+                            child: Text(
+                              alert['title'],
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
+                            ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            alert['desc'],
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          Text(alert['time'], style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
                         ],
                       ),
-                    ),
-                    if (alert['action'] != null) ...[
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: Icon(Icons.arrow_circle_right_outlined, color: alert['color'], size: 20),
-                        onPressed: alert['action'],
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: 'Take Action',
+                      const SizedBox(height: 2),
+                      Text(
+                        alert['desc'],
+                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 28),
+                if (alert['action'] != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(Icons.arrow_circle_right_outlined, color: alert['color'], size: 18),
+                    onPressed: alert['action'],
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
 }
-
