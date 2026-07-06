@@ -34,7 +34,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final tables = ref.watch(tableProvider);
     final orderState = ref.watch(orderProvider);
     final reportsState = ref.watch(reportsProvider);
-    final billingTables = tables.where((t) => t.status == 'OCCUPIED' || t.status == 'BILLING').toList();
+    final billingTables = tables
+        .where((t) => t.status == 'OCCUPIED' || t.status == 'BILLING')
+        .toList();
 
     // Today's Gross Sales
     String salesValue = 'Rs. 0.00';
@@ -43,23 +45,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       salesValue = 'Loading...';
     } else if (reportsState.report != null) {
       salesValue = 'Rs. ${reportsState.report!.totalSales.toStringAsFixed(2)}';
-      salesSubtitle = 'Avg: Rs. ${reportsState.report!.avgOrderValue.toStringAsFixed(0)} / order';
+      salesSubtitle =
+          'Avg: Rs. ${reportsState.report!.avgOrderValue.toStringAsFixed(0)} / order';
     } else if (reportsState.errorMessage != null) {
       salesValue = 'Error';
     }
 
     // Active KOT Orders
     final activeKOTCount = orderState.activeOrders.values
-        .where((o) => o.status == 'PENDING' || o.status == 'PREPARING' || o.status == 'READY')
+        .where((o) =>
+            o.status == 'PENDING' ||
+            o.status == 'PREPARING' ||
+            o.status == 'READY')
         .length;
-    final activeKOTValue = '$activeKOTCount Kitchen Ticket${activeKOTCount == 1 ? "" : "s"}';
+    final activeKOTValue =
+        '$activeKOTCount Kitchen Ticket${activeKOTCount == 1 ? "" : "s"}';
 
     // Table Occupancy
-    final occupiedTables = tables.where((t) => t.status == 'OCCUPIED' || t.status == 'BILLING').length;
+    final occupiedTables = tables
+        .where((t) => t.status == 'OCCUPIED' || t.status == 'BILLING')
+        .length;
     final totalTables = tables.length;
-    final occupancyValue = '$occupiedTables / $totalTables Table${totalTables == 1 ? "" : "s"}';
-    final double occupancyPercentage = totalTables == 0 ? 0.0 : (occupiedTables / totalTables) * 100;
-    final occupancySubtitle = '${occupancyPercentage.toStringAsFixed(0)}% capacity active';
+    final occupancyValue =
+        '$occupiedTables / $totalTables Table${totalTables == 1 ? "" : "s"}';
+    final double occupancyPercentage =
+        totalTables == 0 ? 0.0 : (occupiedTables / totalTables) * 100;
+    final occupancySubtitle =
+        '${occupancyPercentage.toStringAsFixed(0)}% capacity active';
 
     final user = authState.user;
     final staffName = user?.name ?? 'Staff Name';
@@ -73,7 +85,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isWide = screenWidth > 900;
-    final double ratio = screenWidth < 600 ? 1.30 : (screenWidth < 950 ? 1.40 : 1.50);
+    final double ratio =
+        screenWidth < 600 ? 1.30 : (screenWidth < 950 ? 1.40 : 1.50);
 
     Widget _buildModuleCard({
       required IconData icon,
@@ -424,7 +437,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       Icon(
                         tabStyles[index]['icon'] as IconData,
                         size: 16,
-                        color: isSelected ? const Color(0xFF003893) : const Color(0xFF64748B),
+                        color: isSelected
+                            ? const Color(0xFF003893)
+                            : const Color(0xFF64748B),
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -432,7 +447,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? const Color(0xFF003893) : const Color(0xFF64748B),
+                          color: isSelected
+                              ? const Color(0xFF003893)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],
@@ -522,9 +539,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     child: InkWell(
                       onTap: () {
-                        ref
-                            .read(orderProvider.notifier)
-                            .selectTable(table.id);
+                        ref.read(orderProvider.notifier).selectTable(table.id);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -763,7 +778,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -799,12 +815,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _buildStatusBadge(
           icon: Icons.wallet_outlined,
           label: isShiftOpen ? 'Shift Active' : 'Drawer Closed',
-          color: isShiftOpen ? const Color(0xFF2E7D32) : const Color(0xFFC8102E),
+          color:
+              isShiftOpen ? const Color(0xFF2E7D32) : const Color(0xFFC8102E),
         ),
         _buildStatusBadge(
-          icon: pendingSyncCount > 0 ? Icons.sync_rounded : Icons.cloud_done_outlined,
-          label: pendingSyncCount > 0 ? 'Syncing ($pendingSyncCount)' : 'Cloud Synced',
-          color: pendingSyncCount > 0 ? const Color(0xFFE65100) : const Color(0xFF2E7D32),
+          icon: pendingSyncCount > 0
+              ? Icons.sync_rounded
+              : Icons.cloud_done_outlined,
+          label: pendingSyncCount > 0
+              ? 'Syncing ($pendingSyncCount)'
+              : 'Cloud Synced',
+          color: pendingSyncCount > 0
+              ? const Color(0xFFE65100)
+              : const Color(0xFF2E7D32),
         ),
         _buildStatusBadge(
           icon: Icons.print_outlined,
@@ -977,11 +1000,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             const Text(
               'Interactive Floor Map Preview',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B)),
             ),
             const SizedBox(height: 12),
             tables.isEmpty
-                ? const Text('No tables configured.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13))
+                ? const Text('No tables configured.',
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 13))
                 : Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -990,21 +1017,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       final isOccupied = table.status == 'OCCUPIED';
                       final isDirty = table.status == 'DIRTY';
 
-                      Color statusColor = const Color(0xFF2E7D32); // FREE = Green
+                      Color statusColor =
+                          const Color(0xFF2E7D32); // FREE = Green
                       if (isBilling) {
-                        statusColor = const Color(0xFFE65100); // BILLING = Orange
+                        statusColor =
+                            const Color(0xFFE65100); // BILLING = Orange
                       } else if (isOccupied) {
-                        statusColor = const Color(0xFF003893); // OCCUPIED = Blue
+                        statusColor =
+                            const Color(0xFF003893); // OCCUPIED = Blue
                       } else if (isDirty) {
-                        statusColor = const Color(0xFF78909C); // DIRTY = Grey-blue
+                        statusColor =
+                            const Color(0xFF78909C); // DIRTY = Grey-blue
                       }
 
                       return InkWell(
                         onTap: () {
-                          ref.read(orderProvider.notifier).selectTable(table.id);
+                          ref
+                              .read(orderProvider.notifier)
+                              .selectTable(table.id);
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const OrderIntakeScreen()),
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const OrderIntakeScreen()),
                           );
                         },
                         borderRadius: BorderRadius.circular(30),
@@ -1082,17 +1117,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 const Text(
                   'Active Cash Drawer',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B)),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
                     'OPEN',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
+                    style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32)),
                   ),
                 ),
               ],
@@ -1101,24 +1143,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Cashier:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                Text(activeShift.openedByName ?? 'Unknown', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                const Text('Cashier:',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text(activeShift.openedByName ?? 'Unknown',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B))),
               ],
             ),
             const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Opening Cash:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                Text('NPR ${activeShift.openingCash.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                const Text('Opening Cash:',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text('NPR ${activeShift.openingCash.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B))),
               ],
             ),
             const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Started At:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                Text(activeShift.openedAt.toLocal().toString().substring(11, 16), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                const Text('Started At:',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text(
+                    activeShift.openedAt.toLocal().toString().substring(11, 16),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B))),
               ],
             ),
           ],
@@ -1165,7 +1223,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         'action': () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const BillingTerminalScreen()),
+            MaterialPageRoute(
+                builder: (context) => const BillingTerminalScreen()),
           );
         }
       });
@@ -1181,7 +1240,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         'action': () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const KitchenDisplayScreen()),
+            MaterialPageRoute(
+                builder: (context) => const KitchenDisplayScreen()),
           );
         }
       });
@@ -1237,11 +1297,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.notifications_active_outlined, color: Color(0xFFC8102E), size: 18),
+            const Icon(Icons.notifications_active_outlined,
+                color: Color(0xFFC8102E), size: 18),
             const SizedBox(width: 8),
             Text(
               'Action Center (${alerts.length})',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B)),
             ),
           ],
         ),
@@ -1253,7 +1317,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: alert['color'].withValues(alpha: 0.15), width: 1),
+              border: Border.all(
+                  color: alert['color'].withValues(alpha: 0.15), width: 1),
             ),
             child: Row(
               children: [
@@ -1276,16 +1341,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           Expanded(
                             child: Text(
                               alert['title'],
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: Color(0xFF1E293B)),
                             ),
                           ),
-                          Text(alert['time'], style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8))),
+                          Text(alert['time'],
+                              style: const TextStyle(
+                                  fontSize: 9, color: Color(0xFF94A3B8))),
                         ],
                       ),
                       const SizedBox(height: 2),
                       Text(
                         alert['desc'],
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                        style: const TextStyle(
+                            fontSize: 10, color: Color(0xFF64748B)),
                       ),
                     ],
                   ),
@@ -1293,7 +1364,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 if (alert['action'] != null) ...[
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: Icon(Icons.arrow_circle_right_outlined, color: alert['color'], size: 18),
+                    icon: Icon(Icons.arrow_circle_right_outlined,
+                        color: alert['color'], size: 18),
                     onPressed: alert['action'],
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),

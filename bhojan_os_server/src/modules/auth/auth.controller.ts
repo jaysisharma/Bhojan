@@ -170,8 +170,10 @@ export const register = async (req: Request, res: Response) => {
  */
 export const verifyPin = async (req: Request, res: Response) => {
   const { pin } = req.body;
+  console.log(`[DEBUG] verifyPin invoked. Input PIN: "${pin}", req.user:`, req.user);
 
   if (!pin) {
+    console.log('[DEBUG] verifyPin: Missing PIN.');
     return res.status(400).json({
       success: false,
       data: null,
@@ -181,6 +183,7 @@ export const verifyPin = async (req: Request, res: Response) => {
 
   // Expecting auth middleware to have populated user details
   if (!req.user) {
+    console.log('[DEBUG] verifyPin: Missing req.user (Unauthorized).');
     return res.status(401).json({
       success: false,
       data: null,
@@ -194,6 +197,7 @@ export const verifyPin = async (req: Request, res: Response) => {
     });
 
     if (!user || !user.isActive) {
+      console.log(`[DEBUG] verifyPin: User not found or inactive for ID: ${req.user?.userId}`);
       return res.status(404).json({
         success: false,
         data: null,
@@ -202,6 +206,7 @@ export const verifyPin = async (req: Request, res: Response) => {
     }
 
     const isMatch = await bcrypt.compare(pin, user.pinHash);
+    console.log(`[DEBUG] verifyPin: Comparing input pin "${pin}" with hash. Match? ${isMatch}`);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -210,12 +215,14 @@ export const verifyPin = async (req: Request, res: Response) => {
       });
     }
 
+    console.log(`[DEBUG] verifyPin: Successfully verified PIN for user: ${user.name}`);
     return res.status(200).json({
       success: true,
       data: { verified: true },
       error: null,
     });
   } catch (error: any) {
+    console.error('[DEBUG] verifyPin: Error caught:', error);
     return res.status(500).json({
       success: false,
       data: null,

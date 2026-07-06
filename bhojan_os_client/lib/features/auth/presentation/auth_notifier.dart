@@ -108,6 +108,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
+      print('[DEBUG] Client calling pin-verify. BaseURL: $_baseUrl, Token: ${state.accessToken?.substring(0, 15)}...');
       final response = await _dio.post(
         '$_baseUrl/auth/pin-verify',
         data: {'pin': pin},
@@ -119,6 +120,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         ),
       );
 
+      print('[DEBUG] Server pin-verify response: ${response.statusCode} -> ${response.data}');
       if (response.statusCode == 200 && response.data['success'] == true) {
         final isVerified = response.data['data']['verified'] as bool;
         if (isVerified) {
@@ -128,6 +130,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       return false;
     } catch (e) {
+      print('[DEBUG] Client verifyPin caught error: $e');
+      if (e is DioException) {
+        print('[DEBUG] Dio Error response: ${e.response?.statusCode} -> ${e.response?.data}');
+      }
       return false;
     }
   }
